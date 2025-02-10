@@ -1,0 +1,21 @@
+.user-info {
+    .greeting-section {
+        font-size: 20px !important;
+
+        .user-name {
+            font-size: 17px !important;
+        }
+    }
+
+    .signout-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px !important;
+        height: 24px !important;
+    }
+
+    .signout-icon img {
+        width: 100%;
+    }
+}
