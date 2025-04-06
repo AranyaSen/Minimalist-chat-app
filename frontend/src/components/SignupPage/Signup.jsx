@@ -1,66 +1,78 @@
-import React, { useContext, useState } from "react";
-import "./SignIn.css";
+import React, { useState } from "react";
+import "./Signup.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { userLogInName, userLoginId } from "../../contexts/userContext";
-import { jwtDecode } from "jwt-decode";
 
-const SignIn = () => {
+const Signup = () => {
   const navigate = useNavigate();
-
-  // STATE VARIABLES
+  const [name, setName] = useState("");
+  const [nameError, setNameError] = useState(false);
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
 
-  // CONTEXT API
-  const { setLoginName } = useContext(userLogInName);
-  const { setLoginId } = useContext(userLoginId);
-
-  const handleSignIn = async () => {
-    const signInData = {
+  const handleSignup = async () => {
+    const userData = {
+      name: name,
       username: username,
       password: password,
     };
     try {
-      if (username && password) {
+      if (name && username && password) {
         const res = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/signin`,
-          signInData
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/signup`,
+          userData
         );
-        if (res.status === 200) {
-          document.cookie = `token = ${res.data.token}; Path=/; Max-Age=1200`;
-          const decodedToken = jwtDecode(res.data.token);
-          setLoginName(decodedToken.username);
-          setLoginId(decodedToken.userId);
-          navigate("/users");
+        if (res.status === 201) {
+          navigate("/signin");
         }
       } else {
         !username && setUsernameError(true);
+        !name && setNameError(true);
         !password && setPasswordError(true);
         toast.error("Please enter proper details");
       }
     } catch (err) {
-      if (err.response && err.response.status === 401) {
+      if (err.response && err.status === 409) {
         toast.error(err.response.data.message);
       }
+      console.error(err);
     }
   };
-
   return (
     <div className="container-div">
-      <div className="signin-wrapper">
-        <h2>SignIn to your account</h2>
-        <div className="signin-inputs">
+      <div className="signup-wrapper">
+        <h2>Create your account</h2>
+        <div className="signup-inputs">
+          <div className="input-section">
+            <div className="name-section">
+              <label className="name-label">Name</label>
+              <input
+                type="text"
+                className="user-inputs"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameError(false);
+                }}
+                onBlur={() => {
+                  !name ? setNameError(true) : setNameError(false);
+                }}
+              />
+            </div>
+            {nameError && (
+              <span className="validation-msg">Please enter your name</span>
+            )}
+          </div>
           <div className="input-section">
             <div className="username-section">
               <label className="username-label">Username</label>
               <input
                 type="text"
                 className="user-inputs"
+                value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
                   setUsernameError(false);
@@ -80,6 +92,7 @@ const SignIn = () => {
               <input
                 type="text"
                 className="user-inputs"
+                value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setPasswordError(false);
@@ -93,18 +106,17 @@ const SignIn = () => {
               <span className="validation-msg">Please enter your password</span>
             )}
           </div>
-          <div className="signin-btn-section">
-            <button className="signin-btn" onClick={handleSignIn}>
-              Sign In
+          <div className="signup-btn-section">
+            <button className="signup-btn" onClick={handleSignup}>
+              Sign Up
             </button>
-            <ToastContainer />
           </div>
         </div>
-
+        <ToastContainer />
         <div className="more-sections">
-          <span>New user ? </span>
-          <span onClick={() => navigate("/signup")} className="signup-btn">
-            Sign Up
+          <span>Already a user ? </span>
+          <span onClick={() => navigate("/signin")} className="signin-btn">
+            Sign In
           </span>
         </div>
       </div>
@@ -112,4 +124,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default Signup;
