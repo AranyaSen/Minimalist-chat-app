@@ -1,0 +1,50 @@
+.navbar-wrapper {
+  display: flex;
+  justify-content: center;
+
+  .navbar {
+    background: rgba(128, 128, 128, 0.4);
+    height: 70px;
+    width: 95%;
+    border-radius: 8px;
+    margin: 15px 0 40px 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .profile-section {
+    position: relative;
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    gap: 15px;
+    width: 15%;
+    height: 100%;
+  }
+  span.signup-btn {
+    cursor: pointer;
+  }
+  img.user-image {
+    height: 32px;
+    width: 32px;
+    cursor: pointer;
+  }
+
+  .user-dropdown-content {
+    display: flex;
+    position: absolute;
+    top: 55px;
+    left: 0px;
+    padding: 10px 10px;
+    background-color: rgb(167, 167, 167);
+    border-radius: 8px;
+
+    span {
+      color: rgba(0, 0, 0, 0.8);
+      cursor: pointer;
+    }
+    span:hover {
+      color: white;
+    }
+  }
+}
