@@ -1,12 +1,19 @@
 /* @tailwind base;
 @tailwind components;
 @tailwind utilities; */
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&family=Winky+Sans:ital,wght@0,300..900;1,300..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&family=Winky+Sans:ital,wght@0,300..900;1,300..900&display=swap");
+
+:root {
+  --primary-color: #5c4f82;
+  --primary-color-hover: #6d5ba3;
+  --secondary-color: #efa985;
+  --error-color:#D81E5B;
+}
 
 body {
   margin: 0;
-  padding: 0;
-  background-color: rgba(0, 0, 0, 0.9);
+  padding: 2rem;
+  background-color: #4d426d;
   color: whitesmoke;
   font-family: "Roboto Mono", monospace;
   font-weight: 500;
