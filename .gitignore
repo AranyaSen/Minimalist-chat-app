@@ -404,3 +404,6 @@ node_modules
 
 # Env file
 .env
+
+# package-lock
+package-lock.json
