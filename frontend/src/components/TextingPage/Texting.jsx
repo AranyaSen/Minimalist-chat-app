@@ -3,6 +3,7 @@ import "./Texting.css";
 import { userLoginId } from "../../contexts/userContext";
 import axios from "axios";
 import Loader from "../Loader/Loader";
+import sendIcon from "../../images/send.png";
 
 const Texting = ({ receiverId }) => {
   const chatSectionRef = useRef();
@@ -151,32 +152,36 @@ const Texting = ({ receiverId }) => {
     <div className="text-container-div">
       <div className="text-wrapper">
         {noMessage ? (
-          <div className="chat-section">Start chatting...</div>
+          <div className="chat-section">
+            <div className="chat-inner-section">Start chatting...</div>
+          </div>
         ) : (
           <>
             <div className="chat-section">
-              {messages.map((res, index) => {
-                return (
-                  <div
-                    className={
-                      res.sender._id === loginId
-                        ? "message-right-section"
-                        : "message-left-section"
-                    }
-                    key={index}
-                  >
-                    <div className="message">
-                      {res.message}
-                      <span className="show-timestamp">
-                        <p className="timestamp">
-                          {timeFormatter(res.timeStamp)}
-                        </p>
-                      </span>
+              <div className="chat-inner-section">
+                {messages.map((res, index) => {
+                  return (
+                    <div
+                      className={
+                        res.sender._id === loginId
+                          ? "message-right-section"
+                          : "message-left-section"
+                      }
+                      key={index}
+                    >
+                      <div className="message">
+                        {res.message}
+                        <span className="show-timestamp">
+                          <p className="timestamp">
+                            {timeFormatter(res.timeStamp)}
+                          </p>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={chatSectionRef}></div>
+                  );
+                })}
+                <div ref={chatSectionRef}></div>
+              </div>
             </div>
           </>
         )}
@@ -189,7 +194,15 @@ const Texting = ({ receiverId }) => {
             placeholder="Type a message..."
           />
           <button onClick={sendMessage} className="send-text">
-            Send
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="20px"
+              viewBox="0 -960 960 960"
+              width="20px"
+              fill="#    background-color: rgba(0, 0, 0, 0.9);"
+            >
+              <path d="M144-192v-576l720 288-720 288Zm72-107 454-181-454-181v109l216 72-216 72v109Zm0 0v-362 362Z" />
+            </svg>
           </button>
         </div>
       </div>

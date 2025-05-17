@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "./Users.css";
 import axios from "axios";
-import profile from "../../images/profile.jpg";
 import { useNavigate } from "react-router-dom";
 import Loader from "../Loader/Loader";
 import Nav from "../Nav/Nav";
 import Texting from "../TextingPage/Texting";
+import { userLoginId } from "../../contexts/userContext";
 
 const Message = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const Message = () => {
   const [users, setUsers] = useState([]);
   const [login, setLogin] = useState();
   const [userId, setUserId] = useState(null);
+  const { loginId } = useContext(userLoginId);
 
   const handleUser = (user) => {
     setUserId(user._id);
@@ -76,12 +77,19 @@ const Message = () => {
           <div className="chat-left-section">
             <div className="users-wrapper">
               {users.map((user, key) => (
-                <div
-                  className="user-cards"
-                  key={key}
-                  onClick={() => handleUser(user)}
-                >
-                  <div className="user-name">{user.name}</div>
+                <div className="user-cards">
+                  <div
+                    className="user"
+                    key={key}
+                    onClick={() => handleUser(user)}
+                  >
+                    <div className="user-profile-image">
+                      <img src={`${import.meta.env.VITE_BACKEND_URL}/api/user/${user._id}/image`} />
+                    </div>
+                    <div className="user-name">
+                      {user._id === loginId ? <span>You</span> : <span>{user.name}</span>}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
