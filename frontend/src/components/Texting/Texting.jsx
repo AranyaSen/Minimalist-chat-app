@@ -3,7 +3,8 @@ import "./Texting.css";
 import { userLoginId } from "../../contexts/userContext";
 import axios from "axios";
 import Loader from "../Loader/Loader";
-import sendIcon from "../../images/send.png";
+import Chatbox from "../Chatbox/Chatbox";
+import { ChevronDown } from 'lucide-react';
 
 const Texting = ({ receiverId }) => {
   const chatSectionRef = useRef();
@@ -14,8 +15,8 @@ const Texting = ({ receiverId }) => {
   // STATE VARIABLES
   const [login, setLogin] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [userMessage, setUserMessage] = useState("");
   const [noMessage, setNoMessages] = useState(false);
+  const [messageDetails, setMessageDetails] = useState(false);
 
   const timeFormatter = (e) => {
     return Intl.DateTimeFormat("en-IN", {
@@ -43,27 +44,6 @@ const Texting = ({ receiverId }) => {
       if (err.response.status === 404) {
         setNoMessages(true);
       }
-      console.error(err.response);
-    }
-  };
-
-  const sendMessage = async () => {
-    const payloadData = {
-      senderId: loginId,
-      receiverId: receiverId,
-      messageContent: userMessage,
-    };
-
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/messages/sender`,
-        payloadData
-      );
-      if (res.status === 201) {
-        // fetchMessages();
-        setUserMessage("");
-      }
-    } catch (err) {
       console.error(err.response);
     }
   };
@@ -176,6 +156,12 @@ const Texting = ({ receiverId }) => {
                             {timeFormatter(res.timeStamp)}
                           </p>
                         </span>
+                        {res.sender._id === loginId && <ChevronDown width={14} cursor={"pointer"} onClick={() => setMessageDetails(prev => !prev)} />}
+                        {messageDetails && (
+                          <div className="message-details">
+                            <span>Edit</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -185,26 +171,7 @@ const Texting = ({ receiverId }) => {
             </div>
           </>
         )}
-        <div className="chat-box-section">
-          <input
-            className="chat-box"
-            type="text"
-            value={userMessage}
-            onChange={(e) => setUserMessage(e.target.value)}
-            placeholder="Type a message..."
-          />
-          <button onClick={sendMessage} className="send-text">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20px"
-              viewBox="0 -960 960 960"
-              width="20px"
-              fill="#    background-color: rgba(0, 0, 0, 0.9);"
-            >
-              <path d="M144-192v-576l720 288-720 288Zm72-107 454-181-454-181v109l216 72-216 72v109Zm0 0v-362 362Z" />
-            </svg>
-          </button>
-        </div>
+        <Chatbox receiverId={receiverId} />
       </div>
     </div>
   );
