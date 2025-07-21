@@ -5,6 +5,7 @@ import axios from "axios";
 import Loader from "../Loader/Loader";
 import Chatbox from "../Chatbox/Chatbox";
 import { ChevronDown } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 
 const Texting = ({ receiverId }) => {
   const chatSectionRef = useRef();
@@ -16,7 +17,7 @@ const Texting = ({ receiverId }) => {
   const [login, setLogin] = useState(false);
   const [messages, setMessages] = useState([]);
   const [noMessage, setNoMessages] = useState(false);
-  const [messageDetails, setMessageDetails] = useState(false);
+  const [messageDetailsIndex, setMessageDetailsIndex] = useState(null);
 
   const timeFormatter = (e) => {
     return Intl.DateTimeFormat("en-IN", {
@@ -71,6 +72,22 @@ const Texting = ({ receiverId }) => {
       }
     }
   };
+
+  const handleMessageDetailsIndex = (e, index) => {
+    setMessageDetailsIndex(prev => prev ? null : index);
+  }
+
+  const handleMessageReact = async (e, id) => {
+    const emoji = {
+      reaction: e.emoji,
+    }
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, emoji);
+      setMessageDetailsIndex(null);
+    } catch (error) {
+      console.error(error.message);
+    }
+  }
 
   // USEEFFECT FOR API CALLS
   useEffect(() => {
@@ -156,12 +173,17 @@ const Texting = ({ receiverId }) => {
                             {timeFormatter(res.timeStamp)}
                           </p>
                         </span>
-                        {res.sender._id === loginId && <ChevronDown width={14} cursor={"pointer"} onClick={() => setMessageDetails(prev => !prev)} />}
-                        {messageDetails && (
+                        {res.sender._id === loginId && <ChevronDown width={14} cursor={"pointer"} onClick={(e) => handleMessageDetailsIndex(e, index)} />}
+                        {messageDetailsIndex === index && (
                           <div className="message-details">
-                            <span>Edit</span>
+                            <EmojiPicker allowExpandReactions={false} onEmojiClick={(e) => { handleMessageReact(e, res._id) }} theme='dark' skinTonesDisabled="true" reactionsDefaultOpen='true' />
                           </div>
                         )}
+                        {res.messageReaction &&
+                          <div className="reaction">
+                            {res.messageReaction}
+                          </div>
+                        }
                       </div>
                     </div>
                   );
