@@ -30,7 +30,8 @@ router.post("/messages/receiver/", async (req, res) => {
     })
       .populate("sender", "username")
       .populate("receiver", "username")
-      .sort({ createdAt: 1 });
+      // messages schema uses `timeStamp` so sort by that field
+      .sort({ timeStamp: 1 });
 
     if (messages.length === 0) {
       return res.status(404).json({ message: "No message" });
@@ -60,17 +61,19 @@ router.post("/messages/sender", async (req, res) => {
       message: messageContent,
     });
     await newMessage.save();
-    // THIS PART IS DONE FOR WEBSOCKET
+    // populate sender/receiver so the client receives the same shape as the
+    // HTTP /messages/receiver response (sender and receiver as objects)
+    await newMessage.populate("sender", "username");
+    await newMessage.populate("receiver", "username");
+
+    // send a plain object (not a Mongoose document) over websocket
+    const payload = { type: "new-message", data: newMessage.toObject() };
     const wss = req.app.get("wss");
     if (wss) {
       wss.clients.forEach((client) => {
+        // WebSocket.OPEN === 1
         if (client.readyState === 1) {
-          client.send(
-            JSON.stringify({
-              type: "new-message",
-              data: newMessage,
-            })
-          );
+          client.send(JSON.stringify(payload));
         }
       });
     }
@@ -93,21 +96,23 @@ router.post('/messages/react/:messageId', async (req, res) => {
   }
 
   try {
-    const message = await Message.findByIdAndUpdate(messageId, { messageReaction: reaction });
+    // return the updated document
+    const message = await Message.findByIdAndUpdate(
+      messageId,
+      { messageReaction: reaction },
+      { new: true }
+    ).populate("sender", "username").populate("receiver", "username");
+
     const wss = req.app.get("wss");
+    const payload = { type: "new-message", data: message ? message.toObject() : null };
     if (wss) {
       wss.clients.forEach((client) => {
         if (client.readyState === 1) {
-          client.send(
-            JSON.stringify({
-              type: "new-message",
-              data: message,
-            })
-          );
+          client.send(JSON.stringify(payload));
         }
       });
     }
-    return res.status(200).json({ message: "reaction updated" });
+    return res.status(200).json({ message: "reaction updated", content: message });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }

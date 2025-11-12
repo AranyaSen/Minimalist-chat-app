@@ -102,17 +102,32 @@ const Texting = ({ receiverId }) => {
       console.log("Websocket connected!");
     };
     socket.onmessage = (e) => {
-      const parsedData = JSON.parse(e.data);
-      if (parsedData.type === "new-message") {
-        const messageData = parsedData.data;
-        if (
-          (messageData.sender === loginId &&
-            messageData.receiver === receiverId) ||
-          (messageData.sender === receiverId &&
-            messageData.receiver === loginId)
-        ) {
-          fetchMessages();
+      try {
+        const parsedData = JSON.parse(e.data);
+        if (parsedData.type === "new-message") {
+          const messageData = parsedData.data;
+          if (!messageData) return;
+
+          // normalize sender/receiver ids in case server sends populated objects
+          const senderIdFromMsg =
+            messageData.sender && messageData.sender._id
+              ? messageData.sender._id
+              : messageData.sender;
+
+          const receiverIdFromMsg =
+            messageData.receiver && messageData.receiver._id
+              ? messageData.receiver._id
+              : messageData.receiver;
+
+          if (
+            (senderIdFromMsg === String(loginId) && receiverIdFromMsg === String(receiverId)) ||
+            (senderIdFromMsg === String(receiverId) && receiverIdFromMsg === String(loginId))
+          ) {
+            fetchMessages();
+          }
         }
+      } catch (err) {
+        console.error('Failed to parse websocket message', err);
       }
     };
     socket.onclose = () => {
