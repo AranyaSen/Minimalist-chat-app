@@ -44,7 +44,7 @@ mongoose
     console.error("MondogDB connection failed", err);
   });
 
-const PORT = 7000 || process.env.PORT;
+const PORT = process.env.PORT || 7000;
 server.listen(PORT, () => {
   const url =
     `http://localhost:${PORT}` || `${process.env.RENDER_EXTERNAL_URL}:${PORT}`;
