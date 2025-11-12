@@ -23,12 +23,13 @@
   }
 
   .message {
+    position: relative;
     background-color: #4d426d;
     height: fit-content;
     width: fit-content;
     max-width: 65%;
     display: flex;
-    gap: 20px;
+    gap: 10px;
     align-items: flex-end;
     padding: 1rem;
     word-break: break-word;
@@ -47,15 +48,33 @@
         right: 0;
       }
     }
+    .message-details {
+      position: absolute;
+      right: 0;
+      top: -60px;
+    }
+    .reaction {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30px;
+      height: 30px;
+      right: 0;
+      bottom: -10px;
+      background-color: var(--primary-color);
+      border-radius: 100%;
+    }
   }
 
   .message-right-section {
     display: flex;
     justify-content: flex-end;
 
-    .message{
+    .message {
+      font-size: 20px;
       background-color: var(--secondary-color);
-      color: #0D1F22;
+      color: #0d1f22;
     }
   }
   .message-left-section {
@@ -66,7 +85,7 @@
   .chat-section {
     height: 85%;
     overflow-y: scroll;
-    
+
     .chat-inner-section {
       display: flex;
       flex-direction: column;
@@ -76,53 +95,5 @@
   }
   .chat-section::-webkit-scrollbar {
     width: 5px;
-  }
-  .chat-box-section {
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 0 2rem;
-    height: 15%;
-    justify-content: space-between;
-
-    .chat-box {
-      width: 95%;
-      height: 45%;
-      border: none;
-      background-color: #f2efea;
-      color: #0D1F22;
-      outline: 1px solid rgb(128, 128, 128);
-      font-size: 20px;
-      padding: 0;
-      text-indent: 20px;
-      border-radius: 20px;
-    }
-    .chat-box::placeholder {
-      color: grey;
-    }
-
-    .chat-box:focus {
-      transition: 0.1s ease-out;
-      border: none;
-      outline: 1px solid #ff796f;
-    }
-
-    .send-text {
-      width: 50px;
-      height: 45%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      right: 0;
-      border-radius: 100%;
-      border: none;
-
-      .send-message-icon {
-        width: 100%;
-        height: 100%;
-        fill: #4d426d;
-      }
-    }
   }
 }

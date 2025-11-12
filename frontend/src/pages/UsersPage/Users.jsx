@@ -2,9 +2,9 @@ import React, { useState, useEffect, useContext } from "react";
 import "./Users.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Loader from "../Loader/Loader";
-import Nav from "../Nav/Nav";
-import Texting from "../TextingPage/Texting";
+import Loader from "../../components/Loader/Loader";
+import Nav from "../../components/Nav/Nav";
+import Texting from "../../components/Texting/Texting";
 import { userLoginId } from "../../contexts/userContext";
 
 const Message = () => {
@@ -76,11 +76,11 @@ const Message = () => {
         <div className="wrapper">
           <div className="chat-left-section">
             <div className="users-wrapper">
-              {users.map((user, key) => (
+              {users.map((user, index) => (
                 <div className="user-cards">
                   <div
                     className="user"
-                    key={key}
+                    key={index}
                     onClick={() => handleUser(user)}
                   >
                     <div className="user-profile-image">

@@ -1,11 +1,11 @@
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { UserProvider } from "./contexts/userContext.jsx";
-import LandingPage from "./components/LandingPage/LandingPage.jsx";
-import Signup from "./components/SignupPage/Signup.jsx";
-import SignIn from "./components/SinginPage/SignIn";
-import Users from "./components/UsersPage/Users";
-import Texting from "./components/TextingPage/Texting";
+import LandingPage from "./pages/LandingPage/LandingPage.jsx";
+import Signup from "./pages/SignupPage/Signup.jsx";
+import SignIn from "./pages/SinginPage/SignIn";
+import Users from "./pages/UsersPage/Users";
+import Texting from "./components/Texting/Texting.jsx";
 
 function App() {
   return (

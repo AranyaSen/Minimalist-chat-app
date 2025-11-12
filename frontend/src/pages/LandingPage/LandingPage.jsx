@@ -1,4 +1,4 @@
-import Nav from "../Nav/Nav";
+import Nav from "../../components/Nav/Nav";
 import "./LandingPage.css";
 
 const LandingPage = () => {

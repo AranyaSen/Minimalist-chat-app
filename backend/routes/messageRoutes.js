@@ -84,4 +84,33 @@ router.post("/messages/sender", async (req, res) => {
   }
 });
 
+router.post('/messages/react/:messageId', async (req, res) => {
+  const { reaction } = req.body;
+  const messageId = req.params.messageId;
+
+  if (!reaction) {
+    return res.status(400).json({ error: "reaction required" });
+  }
+
+  try {
+    const message = await Message.findByIdAndUpdate(messageId, { messageReaction: reaction });
+    const wss = req.app.get("wss");
+    if (wss) {
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(
+            JSON.stringify({
+              type: "new-message",
+              data: message,
+            })
+          );
+        }
+      });
+    }
+    return res.status(200).json({ message: "reaction updated" });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;
