@@ -5,32 +5,25 @@ const messageRoutes = require("./routes/messageRoutes");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const http = require("http");
-const { WebSocketServer } = require("ws");
+const { Server } = require("socket.io");
+const initializeSocket = require("./sockets/chatSocket");
 require("dotenv").config();
 
 const app = express();
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
-
-wss.on("connection", (ws) => {
-  console.log("WebSocket connected!");
-
-  ws.on("message", (message) => {
-    console.log("Message received via WS:", message);
-  });
-
-  ws.on("close", () => {
-    console.log("WebSocket disconnected");
-  });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
 });
+app.set("io", io);
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/api", userRoutes);
-// Make wss accessible inside route files
-app.set("wss", wss);
 app.use("/api", messageRoutes);
+initializeSocket(io);
 
 // const mongoURILocal = `mongodb://localhost:27017/${process.env.LOCAL_DB_NAME}`;
 const mongoURI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@mycluster.fgzmg.mongodb.net/${process.env.MONGO_DB_NAME}`;

@@ -6,11 +6,13 @@ import Signup from "./pages/SignupPage/Signup.jsx";
 import SignIn from "./pages/SinginPage/SignIn";
 import Users from "./pages/UsersPage/Users";
 import Texting from "./components/Texting/Texting.jsx";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   return (
     <>
       <UserProvider>
+            <ToastContainer />
         <BrowserRouter>
           <Routes>
             <Route path="/" Component={LandingPage} />

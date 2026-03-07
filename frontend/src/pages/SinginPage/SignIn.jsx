@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import "./SignIn.css";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { userLogInName, userLoginId } from "../../contexts/userContext";
 import { jwtDecode } from "jwt-decode";
@@ -22,6 +22,11 @@ const SignIn = () => {
   const { setLoginId } = useContext(userLoginId);
 
   const handleSignIn = async () => {
+    if (!username || !password) {
+      setUsernameError(true);
+      setPasswordError(true);
+      toast.error("Please enter proper details");
+    }
     const signInData = {
       username: username,
       password: password,
@@ -40,9 +45,6 @@ const SignIn = () => {
           navigate("/users");
         }
       } else {
-        !username && setUsernameError(true);
-        !password && setPasswordError(true);
-        toast.error("Please enter proper details");
       }
     } catch (err) {
       if (err.response && err.response.status === 401) {
@@ -150,7 +152,7 @@ const SignIn = () => {
             <button className="signin-btn" onClick={handleSignIn}>
               Sign In
             </button>
-            <ToastContainer />
+            
           </div>
         </div>
 

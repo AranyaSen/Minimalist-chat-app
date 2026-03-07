@@ -4,149 +4,148 @@ import { userLoginId } from "../../contexts/userContext";
 import axios from "axios";
 import Loader from "../Loader/Loader";
 import Chatbox from "../Chatbox/Chatbox";
-import { ChevronDown } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
+import { ChevronDown } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
+import { useChatSocket } from "../../hooks/useChatSocket";
 
 const Texting = ({ receiverId }) => {
   const chatSectionRef = useRef();
 
-  // CONTEXT VARIABLES
+  /* CONTEXT */
   const { loginId } = useContext(userLoginId);
 
-  // STATE VARIABLES
+  /* SOCKET HOOK */
+  const { messages: socketMessages } = useChatSocket(loginId);
+
+  /* STATE */
   const [login, setLogin] = useState(false);
   const [messages, setMessages] = useState([]);
   const [noMessage, setNoMessages] = useState(false);
   const [messageDetailsIndex, setMessageDetailsIndex] = useState(null);
 
-  const timeFormatter = (e) => {
+  const timeFormatter = (time) => {
     return Intl.DateTimeFormat("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    }).format(new Date(e));
+    }).format(new Date(time));
   };
 
+  /* FETCH CONVERSATION HISTORY */
   const fetchMessages = async () => {
     const payloadData = {
       senderId: receiverId,
       receiverId: loginId,
     };
+
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/messages/receiver`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/messages/conversation`,
         payloadData
       );
+
       if (res.status === 200) {
         setMessages(res.data);
         setNoMessages(false);
       }
     } catch (err) {
-      if (err.response.status === 404) {
+      if (err.response?.status === 404) {
         setNoMessages(true);
       }
-      console.error(err.response);
+      console.error(err);
     }
   };
 
+  /* VERIFY USER */
   const verifyUser = async () => {
     try {
       const cookies = document.cookie.split(";");
       const jwtToken = cookies.find((token) =>
         token.trim().startsWith("token")
       );
+
       if (jwtToken) {
         const token = jwtToken.split("=")[1];
-        const res = await axios.get(`${URL}/api/user/verify`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 200) {
-          setLogin(true);
-        } else {
-          setLogin(false);
-        }
+
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/verify`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (res.status === 200) setLogin(true);
       }
     } catch (error) {
-      if (error.response.status === 403) {
+      if (error.response?.status === 403) {
         console.log(error.response.message);
       }
     }
   };
 
-  const handleMessageDetailsIndex = (e, index) => {
-    setMessageDetailsIndex(prev => prev ? null : index);
-  }
+  /* MESSAGE OPTION TOGGLE */
+  const handleMessageDetailsIndex = (index) => {
+    setMessageDetailsIndex((prev) => (prev === index ? null : index));
+  };
 
-  const handleMessageReact = async (e, id) => {
-    const emoji = {
-      reaction: e.emoji,
-    }
+  /* REACT TO MESSAGE */
+  const handleMessageReact = async (emoji, id) => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, emoji);
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`,
+        { reaction: emoji.emoji }
+      );
+
       setMessageDetailsIndex(null);
     } catch (error) {
       console.error(error.message);
     }
-  }
+  };
 
-  // USEEFFECT FOR API CALLS
+  /* INITIAL DATA FETCH */
   useEffect(() => {
     verifyUser();
     fetchMessages();
   }, [receiverId]);
 
-  // USEEFFECT FOR LISTENING TO THE WEBSOCKET
+  /* REALTIME SOCKET MESSAGE LISTENER */
   useEffect(() => {
-    const socket = new WebSocket(`${import.meta.env.VITE_WEBSOCKET_URL}`);
-    socket.onopen = () => {
-      console.log("Websocket connected!");
-    };
-    socket.onmessage = (e) => {
-      try {
-        const parsedData = JSON.parse(e.data);
-        if (parsedData.type === "new-message") {
-          const messageData = parsedData.data;
-          if (!messageData) return;
+    if (!socketMessages || socketMessages.length === 0) return;
 
-          // normalize sender/receiver ids in case server sends populated objects
-          const senderIdFromMsg =
-            messageData.sender && messageData.sender._id
-              ? messageData.sender._id
-              : messageData.sender;
+    const latestMessage = socketMessages[socketMessages.length - 1];
 
-          const receiverIdFromMsg =
-            messageData.receiver && messageData.receiver._id
-              ? messageData.receiver._id
-              : messageData.receiver;
+    const senderIdFromMsg = latestMessage.sender?._id || latestMessage.sender;
 
-          if (
-            (senderIdFromMsg === String(loginId) && receiverIdFromMsg === String(receiverId)) ||
-            (senderIdFromMsg === String(receiverId) && receiverIdFromMsg === String(loginId))
-          ) {
-            fetchMessages();
-          }
-        }
-      } catch (err) {
-        console.error('Failed to parse websocket message', err);
-      }
-    };
-    socket.onclose = () => {
-      console.log("Websocket disconnected");
-    };
-    socket.onerror = (err) => console.error("❌ WebSocket error", err);
-    return () => {
-      socket.close();
-    };
-  }, [receiverId, loginId]);
+    const receiverIdFromMsg =
+      latestMessage.receiver?._id || latestMessage.receiver;
 
-  // SCROLL AT BOTTOM OF CHAT WHEN NEW CHAT OPENS
+    // ensure message belongs to this chat
+    const isCurrentChat =
+      (String(senderIdFromMsg) === String(loginId) &&
+        String(receiverIdFromMsg) === String(receiverId)) ||
+      (String(senderIdFromMsg) === String(receiverId) &&
+        String(receiverIdFromMsg) === String(loginId));
+
+    if (!isCurrentChat) return;
+
+    console.log("📩 New message received via socket:", latestMessage);
+
+    setMessages((prev) => {
+      const exists = prev.find((msg) => msg._id === latestMessage._id);
+      if (exists) return prev;
+
+      return [...prev, latestMessage];
+    });
+
+    setNoMessages(false);
+  }, [socketMessages, receiverId, loginId]);
+
+  /* AUTO SCROLL TO LAST MESSAGE */
   useEffect(() => {
     chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (login === undefined) {
-    return <Loader />;
-  }
+  if (login === undefined) return <Loader />;
 
   if (!receiverId) {
     return (
@@ -168,46 +167,59 @@ const Texting = ({ receiverId }) => {
             <div className="chat-inner-section">Start chatting...</div>
           </div>
         ) : (
-          <>
-            <div className="chat-section">
-              <div className="chat-inner-section">
-                {messages.map((res, index) => {
-                  return (
-                    <div
-                      className={
-                        res.sender._id === loginId
-                          ? "message-right-section"
-                          : "message-left-section"
-                      }
-                      key={index}
-                    >
-                      <div className="message">
-                        {res.message}
-                        <span className="show-timestamp">
-                          <p className="timestamp">
-                            {timeFormatter(res.timeStamp)}
-                          </p>
-                        </span>
-                        {res.sender._id === loginId && <ChevronDown width={14} cursor={"pointer"} onClick={(e) => handleMessageDetailsIndex(e, index)} />}
-                        {messageDetailsIndex === index && (
-                          <div className="message-details">
-                            <EmojiPicker allowExpandReactions={false} onEmojiClick={(e) => { handleMessageReact(e, res._id) }} theme='dark' skinTonesDisabled="true" reactionsDefaultOpen='true' />
-                          </div>
-                        )}
-                        {res.messageReaction &&
-                          <div className="reaction">
-                            {res.messageReaction}
-                          </div>
-                        }
+          <div className="chat-section">
+            <div className="chat-inner-section">
+              {messages.map((res, index) => (
+                <div
+                  key={res._id || index}
+                  className={
+                    res.sender._id === loginId
+                      ? "message-right-section"
+                      : "message-left-section"
+                  }
+                >
+                  <div className="message">
+                    {res.message}
+
+                    <span className="show-timestamp">
+                      <p className="timestamp">
+                        {timeFormatter(res.timeStamp)}
+                      </p>
+                    </span>
+
+                    {res.sender._id === loginId && (
+                      <ChevronDown
+                        width={14}
+                        cursor={"pointer"}
+                        onClick={() => handleMessageDetailsIndex(index)}
+                      />
+                    )}
+
+                    {messageDetailsIndex === index && (
+                      <div className="message-details">
+                        <EmojiPicker
+                          allowExpandReactions={false}
+                          onEmojiClick={(emoji) =>
+                            handleMessageReact(emoji, res._id)
+                          }
+                          theme="dark"
+                          reactionsDefaultOpen
+                        />
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={chatSectionRef}></div>
-              </div>
+                    )}
+
+                    {res.messageReaction && (
+                      <div className="reaction">{res.messageReaction}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <div ref={chatSectionRef}></div>
             </div>
-          </>
+          </div>
         )}
+
         <Chatbox receiverId={receiverId} />
       </div>
     </div>

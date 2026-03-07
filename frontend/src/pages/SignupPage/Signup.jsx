@@ -20,11 +20,14 @@ const Signup = () => {
     try {
       if (name && username && password) {
         const formData = new FormData();
-        formData.append('name', name);
-        formData.append('username', username);
-        formData.append('password', password);
-        formData.append('image', userImage);
-        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/signup`, formData);
+        formData.append("name", name);
+        formData.append("username", username);
+        formData.append("password", password);
+        formData.append("image", userImage);
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/api/user/signup`,
+          formData
+        );
         if (res.status === 201) {
           navigate("/signin");
         }
@@ -48,7 +51,7 @@ const Signup = () => {
       setUserImage(imgfile);
       setPreviewImage(URL.createObjectURL(imgfile));
     }
-  }
+  };
 
   return (
     <div className="container-div">
@@ -89,12 +92,16 @@ const Signup = () => {
                       setUsernameError(false);
                     }}
                     onBlur={() => {
-                      !username ? setUsernameError(true) : setUsernameError(false);
+                      !username
+                        ? setUsernameError(true)
+                        : setUsernameError(false);
                     }}
                   />
                 </div>
                 {usernameError && (
-                  <span className="validation-msg">Please enter your username</span>
+                  <span className="validation-msg">
+                    Please enter your username
+                  </span>
                 )}
               </div>
               <div className="input-section">
@@ -164,7 +171,9 @@ const Signup = () => {
                     )}
                   </div>
                   {passwordError && (
-                    <span className="validation-msg">Please enter your password</span>
+                    <span className="validation-msg">
+                      Please enter your password
+                    </span>
                   )}
                 </div>
               </div>
@@ -173,14 +182,19 @@ const Signup = () => {
               <div className="input-section">
                 <div className="image-upload-section">
                   <label>Upload Image</label>
-                  <input type="file" name="image" onChange={handleImageUpload} className="image-upload"/>
+                  <input
+                    type="file"
+                    name="image"
+                    onChange={handleImageUpload}
+                    className="image-upload"
+                  />
                 </div>
               </div>
-              {previewImage &&
+              {previewImage && (
                 <div className="image-preview-section">
                   <img src={previewImage} className="image-preview" />
                 </div>
-              }
+              )}
             </div>
           </div>
           <div className="signup-btn-section">
