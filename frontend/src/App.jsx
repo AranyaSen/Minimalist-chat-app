@@ -1,4 +1,3 @@
-import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { UserProvider } from "./contexts/userContext.jsx";
 import LandingPage from "./pages/LandingPage/LandingPage.jsx";
@@ -12,7 +11,7 @@ function App() {
   return (
     <>
       <UserProvider>
-            <ToastContainer />
+        <ToastContainer />
         <BrowserRouter>
           <Routes>
             <Route path="/" Component={LandingPage} />

@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useRef, useState, memo } from "react";
-import "./Texting.css";
 import { userLoginId } from "../../contexts/userContext";
 import axios from "axios";
 import Loader from "../Loader/Loader";
@@ -60,19 +59,14 @@ const Texting = ({ receiverId }) => {
   const verifyUser = async () => {
     try {
       const cookies = document.cookie.split(";");
-      const jwtToken = cookies.find((token) =>
-        token.trim().startsWith("token")
-      );
+      const jwtToken = cookies.find((token) => token.trim().startsWith("token"));
 
       if (jwtToken) {
         const token = jwtToken.split("=")[1];
 
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/verify`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/verify`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (res.status === 200) setLogin(true);
       }
@@ -91,10 +85,9 @@ const Texting = ({ receiverId }) => {
   /* REACT TO MESSAGE */
   const handleMessageReact = async (emoji, id) => {
     try {
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`,
-        { reaction: emoji.emoji }
-      );
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, {
+        reaction: emoji.emoji,
+      });
 
       setMessageDetailsIndex(null);
     } catch (error) {
@@ -116,8 +109,7 @@ const Texting = ({ receiverId }) => {
 
     const senderIdFromMsg = latestMessage.sender?._id || latestMessage.sender;
 
-    const receiverIdFromMsg =
-      latestMessage.receiver?._id || latestMessage.receiver;
+    const receiverIdFromMsg = latestMessage.receiver?._id || latestMessage.receiver;
 
     // ensure message belongs to this chat
     const isCurrentChat =
@@ -149,9 +141,9 @@ const Texting = ({ receiverId }) => {
 
   if (!receiverId) {
     return (
-      <div className="text-container-div">
-        <div className="text-wrapper receiver-id-not-found">
-          <div className="text-info">
+      <div className="h-full w-full flex justify-center items-center">
+        <div className="h-full w-full bg-primary rounded-[20px] flex justify-center">
+          <div className="mt-8 text-[22px]">
             <span>Select a person to chat...</span>
           </div>
         </div>
@@ -160,29 +152,31 @@ const Texting = ({ receiverId }) => {
   }
 
   return (
-    <div className="text-container-div">
-      <div className="text-wrapper">
+    <div className="h-full w-full flex justify-center items-center">
+      <div className="h-full w-full bg-primary rounded-[20px]">
         {noMessage ? (
-          <div className="chat-section">
-            <div className="chat-inner-section">Start chatting...</div>
+          <div className="h-[85%] overflow-y-auto [&::-webkit-scrollbar]:w-[5px]">
+            <div className="flex flex-col gap-[14px] pt-8 px-8">Start chatting...</div>
           </div>
         ) : (
-          <div className="chat-section">
-            <div className="chat-inner-section">
+          <div className="h-[85%] overflow-y-auto [&::-webkit-scrollbar]:w-[5px]">
+            <div className="flex flex-col gap-[14px] pt-8 px-8">
               {messages.map((res, index) => (
                 <div
                   key={res._id || index}
-                  className={
-                    res.sender._id === loginId
-                      ? "message-right-section"
-                      : "message-left-section"
-                  }
+                  className={res.sender._id === loginId ? "flex justify-end" : "flex justify-start"}
                 >
-                  <div className="message">
+                  <div
+                    className={`relative h-fit w-fit max-w-[65%] flex gap-[10px] items-end p-4 break-words rounded-[20px] ${
+                      res.sender._id === loginId
+                        ? "text-[20px] bg-secondary text-[#0d1f22]"
+                        : "bg-[#4d426d]"
+                    }`}
+                  >
                     {res.message}
 
-                    <span className="show-timestamp">
-                      <p className="timestamp">
+                    <span className="text-[10px] relative min-w-[48px]">
+                      <p className="m-0 p-0 absolute -top-[5px] right-0">
                         {timeFormatter(res.timeStamp)}
                       </p>
                     </span>
@@ -190,18 +184,16 @@ const Texting = ({ receiverId }) => {
                     {res.sender._id === loginId && (
                       <ChevronDown
                         width={14}
-                        cursor={"pointer"}
+                        className="cursor-pointer"
                         onClick={() => handleMessageDetailsIndex(index)}
                       />
                     )}
 
                     {messageDetailsIndex === index && (
-                      <div className="message-details">
+                      <div className="absolute right-0 -top-[60px]">
                         <EmojiPicker
                           allowExpandReactions={false}
-                          onEmojiClick={(emoji) =>
-                            handleMessageReact(emoji, res._id)
-                          }
+                          onEmojiClick={(emoji) => handleMessageReact(emoji, res._id)}
                           theme="dark"
                           reactionsDefaultOpen
                         />
@@ -209,7 +201,9 @@ const Texting = ({ receiverId }) => {
                     )}
 
                     {res.messageReaction && (
-                      <div className="reaction">{res.messageReaction}</div>
+                      <div className="absolute flex justify-center items-center w-[30px] h-[30px] right-0 -bottom-[10px] bg-primary rounded-full">
+                        {res.messageReaction}
+                      </div>
                     )}
                   </div>
                 </div>

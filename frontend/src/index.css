@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "react-toastify/dist/ReactToastify.css";
+
+@theme {
+  --color-primary: #5c4f82;
+  --color-primary-hover: #6d5ba3;
+  --color-secondary: #efa985;
+  --color-error: #d81e5b;
+
+  --font-mono: "Roboto Mono", monospace;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    padding: 2rem;
+    background-color: #4d426d;
+    color: whitesmoke;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+}

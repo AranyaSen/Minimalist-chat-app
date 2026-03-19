@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from "react";
-import "./Signup.css";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import Nav from "../../components/Nav/Nav";
+import { User, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "lucide-react";
 
+/**
+ * Signup Component - Handles user registration
+ */
 const Signup = () => {
   const navigate = useNavigate();
+
+  // STATE VARIABLES
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState(false);
   const [username, setUsername] = useState("");
@@ -15,200 +21,246 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [userImage, setUserImage] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async () => {
+  /**
+   * handleImageUpload - Handles the profile picture selection
+   */
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUserImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+    }
+  };
+
+  /**
+   * handleSignup - Processes the registration request
+   */
+  const handleSignup = async (e) => {
+    if (e) e.preventDefault();
+    if (!name || !username || !password) {
+      setNameError(!name);
+      setUsernameError(!username);
+      setPasswordError(!password);
+      return toast.error("Please enter proper details");
+    }
+
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("username", username);
+    formData.append("password", password);
+    if (userImage) formData.append("image", userImage);
+
     try {
-      if (name && username && password) {
-        const formData = new FormData();
-        formData.append("name", name);
-        formData.append("username", username);
-        formData.append("password", password);
-        formData.append("image", userImage);
-        const res = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/user/signup`,
-          formData
-        );
-        if (res.status === 201) {
-          navigate("/signin");
-        }
-      } else {
-        !username && setUsernameError(true);
-        !name && setNameError(true);
-        !password && setPasswordError(true);
-        toast.error("Please enter proper details");
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/signup`, formData);
+      if (res.status === 201) {
+        toast.success("Account created successfully!");
+        navigate("/signin");
       }
     } catch (err) {
       if (err.response && err.status === 409) {
         toast.error(err.response.data.message);
+      } else {
+        toast.error("Registration failed");
       }
-      console.error(err);
-    }
-  };
-
-  const handleImageUpload = (e) => {
-    const imgfile = e.target.files[0];
-    if (imgfile) {
-      setUserImage(imgfile);
-      setPreviewImage(URL.createObjectURL(imgfile));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container-div">
-      <div className="signup-wrapper">
-        <h2>Create your account</h2>
-        <form>
-          <div className="signup-inputs">
-            <div className="inputs-left-section">
-              <div className="input-section">
-                <div className="name-section">
-                  <label className="name-label">Name</label>
-                  <input
-                    type="text"
-                    className="user-inputs"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setNameError(false);
-                    }}
-                    onBlur={() => {
-                      !name ? setNameError(true) : setNameError(false);
-                    }}
-                  />
-                </div>
-                {nameError && (
-                  <span className="validation-msg">Please enter your name</span>
-                )}
+    <div className="min-h-screen bg-primary text-white flex flex-col">
+      <Nav />
+
+      <div className="flex-1 flex items-center justify-center px-4 py-12 md:py-24">
+        <div className="w-full max-w-2xl animate-fade-in">
+          {/* Glassmorphic Card */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+            {/* Background Decorative Blobs */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -z-10"></div>
+
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary/20 rounded-2xl mb-6">
+                <UserPlus className="text-secondary" size={32} />
               </div>
-              <div className="input-section">
-                <div className="username-section">
-                  <label className="username-label">Username</label>
-                  <input
-                    type="text"
-                    className="user-inputs"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setUsernameError(false);
-                    }}
-                    onBlur={() => {
-                      !username
-                        ? setUsernameError(true)
-                        : setUsernameError(false);
-                    }}
-                  />
-                </div>
-                {usernameError && (
-                  <span className="validation-msg">
-                    Please enter your username
-                  </span>
-                )}
-              </div>
-              <div className="input-section">
-                <div className="password-section">
-                  <label className="password-label">Password</label>
-                  <div className="password-input">
-                    {showPassword ? (
-                      <>
-                        <input
-                          type="text"
-                          className="user-inputs"
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                            setPasswordError(false);
-                          }}
-                          onBlur={() => {
-                            !password
-                              ? setPasswordError(true)
-                              : setPasswordError(false);
-                          }}
-                        />
-                        <span
-                          className="eye-icon"
-                          onClick={() => setShowPassword(false)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            height="20px"
-                            viewBox="0 -960 960 960"
-                            width="20px"
-                            fill="#    background-color: rgba(0, 0, 0, 0.9);"
-                          >
-                            <path d="m637-425-62-62q4-38-23-65.5T487-576l-62-62q13-5 27-7.5t28-2.5q70 0 119 49t49 119q0 14-2.5 28t-8.5 27Zm133 133-52-52q36-28 65.5-61.5T833-480q-49-101-144.5-158.5T480-696q-26 0-51 3t-49 10l-58-58q38-15 77.5-21t80.5-6q143 0 261.5 77.5T912-480q-22 57-58.5 103.5T770-292Zm-2 202L638-220q-38 14-77.5 21t-80.5 7q-143 0-261.5-77.5T48-480q22-57 58-104t84-85L90-769l51-51 678 679-51 51ZM241-617q-35 28-65 61.5T127-480q49 101 144.5 158.5T480-264q26 0 51-3.5t50-9.5l-45-45q-14 5-28 7.5t-28 2.5q-70 0-119-49t-49-119q0-14 3.5-28t6.5-28l-81-81Zm287 89Zm-96 96Z" />
-                          </svg>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          type="password"
-                          className="user-inputs"
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                            setPasswordError(false);
-                          }}
-                          onBlur={() => {
-                            !password
-                              ? setPasswordError(true)
-                              : setPasswordError(false);
-                          }}
-                        />
-                        <span
-                          className="eye-icon"
-                          onClick={() => setShowPassword(true)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            height="20px"
-                            viewBox="0 -960 960 960"
-                            width="20px"
-                            fill="#    background-color: rgba(0, 0, 0, 0.9);"
-                          >
-                            <path d="M480-312q70 0 119-49t49-119q0-70-49-119t-119-49q-70 0-119 49t-49 119q0 70 49 119t119 49Zm0-72q-40 0-68-28t-28-68q0-40 28-68t68-28q40 0 68 28t28 68q0 40-28 68t-68 28Zm0 192q-142.6 0-259.8-78.5Q103-349 48-480q55-131 172.2-209.5Q337.4-768 480-768q142.6 0 259.8 78.5Q857-611 912-480q-55 131-172.2 209.5Q622.6-192 480-192Zm0-288Zm0 216q112 0 207-58t146-158q-51-100-146-158t-207-58q-112 0-207 58T127-480q51 100 146 158t207 58Z" />
-                          </svg>
-                        </span>
-                      </>
+              <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+              <p className="text-gray-400 text-sm">Join the minimalist chat community</p>
+            </div>
+
+            <form onSubmit={handleSignup} className="space-y-8">
+              <div className="flex flex-col md:flex-row gap-10">
+                {/* Left side: Inputs */}
+                <div className="flex-[1.5] space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300 ml-1">Full Name</label>
+                    <div className="relative group">
+                      <div
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${nameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                      >
+                        <User size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          setNameError(false);
+                        }}
+                        onBlur={() => (!name ? setNameError(true) : setNameError(false))}
+                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          nameError
+                            ? "border-red-500/50 focus:ring-red-500/30"
+                            : "border-white/10 focus:border-secondary focus:ring-secondary/30"
+                        }`}
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    {nameError && (
+                      <p className="text-[10px] text-red-400 mt-1 ml-1">Please enter your name</p>
                     )}
                   </div>
-                  {passwordError && (
-                    <span className="validation-msg">
-                      Please enter your password
-                    </span>
-                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
+                    <div className="relative group">
+                      <div
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${usernameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                      >
+                        <User size={18} />
+                      </div>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value);
+                          setUsernameError(false);
+                        }}
+                        onBlur={() =>
+                          !username ? setUsernameError(true) : setUsernameError(false)
+                        }
+                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          usernameError
+                            ? "border-red-500/50 focus:ring-red-500/30"
+                            : "border-white/10 focus:border-secondary focus:ring-secondary/30"
+                        }`}
+                        placeholder="johndoe_99"
+                      />
+                    </div>
+                    {usernameError && (
+                      <p className="text-[10px] text-red-400 mt-1 ml-1">
+                        Please enter your username
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300 ml-1">Password</label>
+                    <div className="relative group">
+                      <div
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${passwordError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                      >
+                        <Lock size={18} />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setPasswordError(false);
+                        }}
+                        onBlur={() =>
+                          !password ? setPasswordError(true) : setPasswordError(false)
+                        }
+                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          passwordError
+                            ? "border-red-500/50 focus:ring-red-500/30"
+                            : "border-white/10 focus:border-secondary focus:ring-secondary/30"
+                        }`}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-secondary transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    {passwordError && (
+                      <p className="text-[10px] text-red-400 mt-1 ml-1">
+                        Please enter your password
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side: Profile Upload */}
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className="relative group cursor-pointer">
+                    <div
+                      className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 border-dashed border-white/20 overflow-hidden flex items-center justify-center transition-all ${previewImage ? "border-secondary/50" : "group-hover:border-secondary/50 group-hover:bg-secondary/5"}`}
+                    >
+                      {previewImage ? (
+                        <img
+                          src={previewImage}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-center p-4">
+                          <Camera
+                            className="mx-auto text-gray-500 mb-2 group-hover:text-secondary transition-colors"
+                            size={32}
+                          />
+                          <span className="text-[10px] text-gray-500 font-medium group-hover:text-secondary">
+                            Click to upload
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      id="image-upload"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                  <p className="mt-4 text-xs text-gray-500 text-center">
+                    Profile Picture <br /> (Optional)
+                  </p>
                 </div>
               </div>
-            </div>
-            <div className="inputs-right-section">
-              <div className="input-section">
-                <div className="image-upload-section">
-                  <label>Upload Image</label>
-                  <input
-                    type="file"
-                    name="image"
-                    onChange={handleImageUpload}
-                    className="image-upload"
-                  />
-                </div>
-              </div>
-              {previewImage && (
-                <div className="image-preview-section">
-                  <img src={previewImage} className="image-preview" />
-                </div>
-              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full bg-secondary text-primary font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
+                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
+              >
+                {isLoading ? (
+                  <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    Create Account <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+              <p className="text-gray-400 text-sm">
+                Already a user?{" "}
+                <Link to="/signin" className="text-secondary font-bold hover:underline">
+                  Sign In
+                </Link>
+              </p>
             </div>
           </div>
-          <div className="signup-btn-section">
-            <button className="signup-btn" onClick={handleSignup} type="button">
-              Sign Up
-            </button>
-          </div>
-        </form>
-        <ToastContainer />
-        <div className="more-sections">
-          <span>Already a user ? </span>
-          <span onClick={() => navigate("/signin")} className="signin-btn">
-            Sign In
-          </span>
         </div>
       </div>
     </div>
