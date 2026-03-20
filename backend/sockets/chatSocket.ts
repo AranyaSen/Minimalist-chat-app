@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
-import Message from "../models/Messages";
+import Message from "@/models/Messages";
+import Conversation from "@/models/Conversations";
 
 const onlineUsers = new Map<string, string>();
 
@@ -15,27 +16,66 @@ const initializeSocket = (io: Server) => {
 
     /* Send message */
     socket.on("send-message", async (data: any) => {
-      const { senderId, receiverId, messageContent } = data;
+      const { senderId, receiverId, messageContent, chatId } = data;
 
       try {
+        let conversationId = chatId;
+
+        // If no chatId, it's a direct message, find or create conversation
+        if (!conversationId && receiverId) {
+          let conversation = await Conversation.findOne({
+            type: "direct",
+            $and: [
+              { participants: { $elemMatch: { userId: senderId } } },
+              { participants: { $elemMatch: { userId: receiverId } } },
+            ],
+          });
+
+          if (!conversation) {
+            conversation = await Conversation.create({
+              type: "direct",
+              participants: [
+                { userId: senderId, role: "member" },
+                { userId: receiverId, role: "member" },
+              ],
+            });
+          }
+          conversationId = conversation._id;
+        }
+
         const newMessage = new Message({
-          sender: senderId,
-          receiver: receiverId,
-          message: messageContent,
+          senderId: senderId,
+          receiverId: receiverId, // Keep for backward compatibility
+          chatId: conversationId,
+          content: messageContent,
         });
 
         await newMessage.save();
 
-        await newMessage.populate("sender", "username");
-        await newMessage.populate("receiver", "username");
+        // Update last message in conversation
+        await Conversation.findByIdAndUpdate(conversationId, {
+          lastMessage: newMessage._id,
+        });
 
-        const receiverSocket = onlineUsers.get(receiverId);
+        await newMessage.populate("senderId", "username");
+        await newMessage.populate({
+          path: "chatId",
+          populate: {
+            path: "participants.userId",
+            select: "username email",
+          },
+        });
 
-        if (receiverSocket) {
-          io.to(receiverSocket).emit("receive-message", newMessage);
+        // Emit to all users in the conversation
+        const conversation = await Conversation.findById(conversationId);
+        if (conversation) {
+          conversation.participants.forEach((p: any) => {
+            const userSocket = onlineUsers.get(p.userId.toString());
+            if (userSocket) {
+              io.to(userSocket).emit("receive-message", newMessage);
+            }
+          });
         }
-
-        socket.emit("receive-message", newMessage);
       } catch (err) {
         console.error("Send message error:", err);
       }

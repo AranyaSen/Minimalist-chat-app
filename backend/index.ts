@@ -4,11 +4,13 @@ import { Server } from "socket.io";
 import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import connectDB from "./config/db";
-import userRoutes from "./routes/userRoutes";
-import messageRoutes from "./routes/messageRoutes";
-import initializeSocket from "./sockets/chatSocket";
-import { notFound, errorHandler } from "./middlewares/errorMiddleware";
+import connectDB from "@/config/db";
+import userRoutes from "@/routes/userRoutes";
+import messageRoutes from "@/routes/messageRoutes";
+import conversationRoutes from "@/routes/conversationRoutes";
+import initializeSocket from "@/sockets/chatSocket";
+import cookieParser from "cookie-parser";
+import { notFound, errorHandler } from "@/middlewares/errorMiddleware";
 
 dotenv.config();
 
@@ -16,7 +18,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: ["http://localhost:5173", "http://localhost:3000"],
+    credentials: true,
   },
 });
 
@@ -24,12 +27,19 @@ const io = new Server(server, {
 connectDB();
 
 app.set("io", io);
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000"],
+    credentials: true,
+  })
+);
+app.use(cookieParser());
 app.use(bodyParser.json());
 
 // Routes
-app.use("/api", userRoutes);
-app.use("/api", messageRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/message", messageRoutes);
+app.use("/api/chat", conversationRoutes);
 
 // Socket Initialization
 initializeSocket(io);

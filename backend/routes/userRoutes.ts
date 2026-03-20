@@ -1,6 +1,8 @@
 import express from "express";
 import multer from "multer";
-import authenticateUser from "../middlewares/authMiddleware";
+import { validate } from "@/middlewares/validationMiddleware";
+import { signupSchema, signinSchema } from "@/validators/userValidator";
+import authenticateUser from "@/middlewares/authMiddleware";
 import {
   signupUser,
   signinUser,
@@ -8,17 +10,23 @@ import {
   getUserImage,
   deleteUser,
   verifyUser,
-} from "../controllers/userController";
+} from "@/controllers/userController";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.post("/user/signup", upload.single("image"), signupUser);
-router.post("/user/signin", signinUser);
-router.get("/user/verify", authenticateUser, verifyUser);
-router.get("/user", getAllUsers);
-router.get("/user/:id/image", getUserImage);
+router.post(
+  "/signup",
+  upload.single("image"),
+  validate(signupSchema),
+  signupUser
+);
+
+router.post("/signin", validate(signinSchema), signinUser);
+router.get("/verify", authenticateUser, verifyUser);
+router.get("/", getAllUsers);
+router.get("/:id/image", getUserImage);
 router.delete("/user/:id", deleteUser);
 
 export default router;

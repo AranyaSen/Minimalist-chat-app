@@ -13,9 +13,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "baseUrl": ".",
+    "baseUrl": "./",
     "paths": {
-      "*": ["node_modules/*"]
+      "@/*": ["*"]
     }
   },
   "include": ["**/*.ts"],

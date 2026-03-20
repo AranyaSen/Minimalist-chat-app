@@ -1,21 +1,19 @@
 import { Request, Response } from "express";
-import User from "../models/User";
+import User from "@/models/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import asyncHandler from "../utils/asyncHandler";
+import asyncHandler from "@/utils/asyncHandler";
+import { generateAccessToken, generateRefreshToken } from "@/utils/token";
 
 export const signupUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, username, password } = req.body;
+  const { name, username, email, password } = req.body;
 
-  const userExists = await User.findOne({ username });
+  const userExists = await User.findOne({
+    $or: [{ username }, { email }],
+  });
   if (userExists) {
     res.status(409);
-    throw new Error("Username already exists");
-  }
-
-  if (!password) {
-    res.status(400);
-    throw new Error("Password is missing");
+    throw new Error("Username or email already exists");
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -24,6 +22,7 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   const newUser = new User({
     name,
     username,
+    email,
     password: hashedPassword,
     image: req.file
       ? {
@@ -37,9 +36,10 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(201).json({
     message: "User Created Successfully",
     user: {
-      _id: newUser._id,
+      id: newUser._id,
       name: newUser.name,
       username: newUser.username,
+      email: newUser.email,
     },
   });
 });
@@ -59,13 +59,26 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Incorrect username or password");
   }
 
-  const token = jwt.sign(
-    { username, userId: user._id },
-    process.env.JWT_SECRET as string,
-    { expiresIn: "24h" }
-  );
+  const accessToken = generateAccessToken(user._id, user.username);
+  const refreshToken = generateRefreshToken(user?._id, user.username);
 
-  res.status(200).json({ message: "SignIn successful", token });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  res.status(200).json({
+    message: "User verified",
+    user: {
+      id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+    },
+    accessToken,
+  });
 });
 
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {

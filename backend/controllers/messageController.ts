@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import Message from "../models/Messages";
-import asyncHandler from "../utils/asyncHandler";
+import Message from "@/models/Messages";
+import asyncHandler from "@/utils/asyncHandler";
 
 export const getAllMessages = asyncHandler(
   async (req: Request, res: Response) => {
@@ -13,33 +13,27 @@ export const getAllMessages = asyncHandler(
   }
 );
 
-export const getConversationMessages = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { senderId, receiverId } = req.body;
+// Get messages for a specific conversation
+export const getConversationMessages = asyncHandler(async (req: Request, res: Response) => {
+  const { chatId } = req.params;
 
-    if (!senderId || !receiverId) {
-      res.status(400);
-      throw new Error("Invalid sender or receiver");
-    }
-
-    const messages = await Message.find({
-      $or: [
-        { sender: receiverId, receiver: senderId },
-        { sender: senderId, receiver: receiverId },
-      ],
-    })
-      .populate("sender", "username")
-      .populate("receiver", "username")
-      .sort({ timeStamp: 1 });
-
-    if (messages.length === 0) {
-      res.status(404);
-      throw new Error("No message");
-    }
+  try {
+    const messages = await Message.find({ chatId: chatId })
+      .populate("senderId", "name username email")
+      .populate({
+        path: "chatId",
+        populate: {
+          path: "participants.userId",
+          select: "name username email",
+        },
+      });
 
     res.status(200).json(messages);
+  } catch (error: any) {
+    res.status(400);
+    throw new Error(error.message);
   }
-);
+}) as any;
 
 export const updateMessageReaction = asyncHandler(
   async (req: Request, res: Response) => {

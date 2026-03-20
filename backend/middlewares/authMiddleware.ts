@@ -1,9 +1,14 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { AuthRequest } from "@/types/user";
 
-const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const token =
-    req.headers["authorization"]?.split(" ")[1] || (req as any).cookies?.token;
+    req.headers["authorization"]?.split(" ")[1] || req.cookies?.token;
 
   if (!token) {
     return res.status(403).json({ message: "Access denied" });
@@ -22,4 +27,4 @@ const authenticateUser = (req: Request, res: Response, next: NextFunction) => {
   );
 };
 
-export default authenticateUser;
+export default authMiddleware;

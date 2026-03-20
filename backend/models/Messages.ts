@@ -1,19 +1,55 @@
 import mongoose, { Schema, Model } from "mongoose";
-import { IMessage } from "../types/message";
+import { MessageType } from "@/types/message";
 
-const messageSchema: Schema<IMessage> = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const messageSchema: Schema<MessageType> = new mongoose.Schema(
+  {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    receiverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    chatId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
+      required: true,
+      index: true,
+    },
+    messageType: {
+      type: String,
+      enum: ["text", "image", "video", "file"],
+      default: "text",
+    },
+    content: { type: String, required: true },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
+    editedAt: Date,
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    deletedAt: Date,
+    messageReaction: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        type: String,
+        default: "",
+      },
+    ],
   },
-  message: { type: String, required: true },
-  messageReaction: { type: String, default: "" },
-  timeStamp: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
-const Message: Model<IMessage> = mongoose.model<IMessage>(
+const Message: Model<MessageType> = mongoose.model<MessageType>(
   "Message",
   messageSchema
 );
