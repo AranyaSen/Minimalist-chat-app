@@ -1,19 +1,20 @@
-const Message = require("../collections/Messages");
+import { Server, Socket } from "socket.io";
+import Message from "../models/Messages";
 
-const onlineUsers = new Map();
+const onlineUsers = new Map<string, string>();
 
-const initializeSocket = (io) => {
-  io.on("connection", (socket) => {
+const initializeSocket = (io: Server) => {
+  io.on("connection", (socket: Socket) => {
     console.log("User connected:", socket.id);
 
     /* Register user */
-    socket.on("join-room", (userId) => {
+    socket.on("join-room", (userId: string) => {
       onlineUsers.set(userId, socket.id);
       console.log("User joined:", userId);
     });
 
     /* Send message */
-    socket.on("send-message", async (data) => {
+    socket.on("send-message", async (data: any) => {
       const { senderId, receiverId, messageContent } = data;
 
       try {
@@ -41,21 +42,30 @@ const initializeSocket = (io) => {
     });
 
     /* Message reaction */
-    socket.on("message-reaction", async ({ messageId, reaction }) => {
-      try {
-        const message = await Message.findByIdAndUpdate(
-          messageId,
-          { messageReaction: reaction },
-          { new: true }
-        )
-          .populate("sender", "username")
-          .populate("receiver", "username");
+    socket.on(
+      "message-reaction",
+      async ({
+        messageId,
+        reaction,
+      }: {
+        messageId: string;
+        reaction: string;
+      }) => {
+        try {
+          const message = await Message.findByIdAndUpdate(
+            messageId,
+            { messageReaction: reaction },
+            { new: true }
+          )
+            .populate("sender", "username")
+            .populate("receiver", "username");
 
-        io.emit("reaction-updated", message);
-      } catch (err) {
-        console.error("Reaction error:", err);
+          io.emit("reaction-updated", message);
+        } catch (err) {
+          console.error("Reaction error:", err);
+        }
       }
-    });
+    );
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
@@ -70,4 +80,4 @@ const initializeSocket = (io) => {
   });
 };
 
-module.exports = initializeSocket;
+export default initializeSocket;
