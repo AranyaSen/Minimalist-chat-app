@@ -1,21 +1,19 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import Loader from "../../components/Loader/Loader";
-import Nav from "../../components/Nav/Nav";
-import Texting from "../../components/Texting/Texting";
-import { userLoginId } from "../../contexts/userContext";
+import Loader from "@/components/Loader/Loader";
+import Nav from "@/components/Nav/Nav";
+import Texting from "@/components/Texting/Texting";
+import useUserStore from "@/store/useUserStore";
+import { User, UsersProps } from "@/pages/UsersPage/Users.types";
 
-const Message = () => {
-  const navigate = useNavigate();
-
+const Message: React.FC<UsersProps> = () => {
   // STATE VARIABLES
-  const [users, setUsers] = useState([]);
-  const [login, setLogin] = useState();
-  const [userId, setUserId] = useState(null);
-  const { loginId } = useContext(userLoginId);
+  const [users, setUsers] = useState<User[]>([]);
+  const [login, setLogin] = useState<boolean | undefined>(undefined);
+  const [userId, setUserId] = useState<string | null>(null);
+  const loginId = useUserStore((state) => state.loginId);
 
-  const handleUser = (user) => {
+  const handleUser = (user: User) => {
     setUserId(user._id);
   };
 
@@ -44,10 +42,13 @@ const Message = () => {
         } else {
           setLogin(false);
         }
+      } else {
+        setLogin(false);
       }
-    } catch (error) {
-      if (error.response.status === 403) {
-        console.log(error.response.message);
+    } catch (error: any) {
+      setLogin(false);
+      if (error.response && error.response.status === 403) {
+        console.log(error.response.data.message);
       }
     }
   };
@@ -95,7 +96,7 @@ const Message = () => {
             </div>
           </div>
           <div className="relative w-4/5 h-full shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
-            <Texting receiverId={userId} />
+            <Texting receiverId={userId || ""} />
           </div>
         </div>
       </div>

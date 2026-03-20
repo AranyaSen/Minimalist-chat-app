@@ -1,33 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import Nav from "../../components/Nav/Nav";
+import { toast } from "react-toastify";
+import Nav from "@/components/Nav/Nav";
 import { User, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "lucide-react";
 
 /**
  * Signup Component - Handles user registration
  */
-const Signup = () => {
+const Signup: React.FC = () => {
   const navigate = useNavigate();
 
   // STATE VARIABLES
-  const [name, setName] = useState("");
-  const [nameError, setNameError] = useState(false);
-  const [username, setUsername] = useState("");
-  const [usernameError, setUsernameError] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [userImage, setUserImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState<string>("");
+  const [nameError, setNameError] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>("");
+  const [usernameError, setUsernameError] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [userImage, setUserImage] = useState<File | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   /**
    * handleImageUpload - Handles the profile picture selection
    */
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setUserImage(file);
       setPreviewImage(URL.createObjectURL(file));
@@ -37,7 +37,7 @@ const Signup = () => {
   /**
    * handleSignup - Processes the registration request
    */
-  const handleSignup = async (e) => {
+  const handleSignup = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!name || !username || !password) {
       setNameError(!name);
@@ -59,8 +59,8 @@ const Signup = () => {
         toast.success("Account created successfully!");
         navigate("/signin");
       }
-    } catch (err) {
-      if (err.response && err.status === 409) {
+    } catch (err: any) {
+      if (err.response && err.response.status === 409) {
         toast.error(err.response.data.message);
       } else {
         toast.error("Registration failed");

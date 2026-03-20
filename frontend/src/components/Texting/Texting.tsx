@@ -1,28 +1,30 @@
-import React, { useContext, useEffect, useRef, useState, memo } from "react";
-import { userLoginId } from "../../contexts/userContext";
+import React, { useEffect, useRef, useState, memo } from "react";
 import axios from "axios";
-import Loader from "../Loader/Loader";
-import Chatbox from "../Chatbox/Chatbox";
+import Loader from "@/components/Loader/Loader";
+import Chatbox from "@/components/Chatbox/Chatbox";
 import { ChevronDown } from "lucide-react";
-import EmojiPicker from "emoji-picker-react";
-import { useChatSocket } from "../../hooks/useChatSocket";
+import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
+import { useChatSocket } from "@/hooks/useChatSocket";
+import useUserStore from "@/store/useUserStore";
+import { TextingProps, EmojiData } from "@/components/Texting/Texting.types";
+import { Message } from "@/hooks/useChatSocket.types";
 
-const Texting = ({ receiverId }) => {
-  const chatSectionRef = useRef();
+const Texting: React.FC<TextingProps> = ({ receiverId }) => {
+  const chatSectionRef = useRef<HTMLDivElement>(null);
 
-  /* CONTEXT */
-  const { loginId } = useContext(userLoginId);
+  /* STORE */
+  const loginId = useUserStore((state) => state.loginId);
 
   /* SOCKET HOOK */
   const { messages: socketMessages } = useChatSocket(loginId);
 
   /* STATE */
-  const [login, setLogin] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [noMessage, setNoMessages] = useState(false);
-  const [messageDetailsIndex, setMessageDetailsIndex] = useState(null);
+  const [login, setLogin] = useState<boolean | undefined>(undefined);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [noMessage, setNoMessages] = useState<boolean>(false);
+  const [messageDetailsIndex, setMessageDetailsIndex] = useState<number | null>(null);
 
-  const timeFormatter = (time) => {
+  const timeFormatter = (time: string) => {
     return Intl.DateTimeFormat("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
@@ -32,6 +34,7 @@ const Texting = ({ receiverId }) => {
 
   /* FETCH CONVERSATION HISTORY */
   const fetchMessages = async () => {
+    if (!receiverId || !loginId) return;
     const payloadData = {
       senderId: receiverId,
       receiverId: loginId,
@@ -47,7 +50,7 @@ const Texting = ({ receiverId }) => {
         setMessages(res.data);
         setNoMessages(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.response?.status === 404) {
         setNoMessages(true);
       }
@@ -69,28 +72,31 @@ const Texting = ({ receiverId }) => {
         });
 
         if (res.status === 200) setLogin(true);
+      } else {
+        setLogin(false);
       }
-    } catch (error) {
+    } catch (error: any) {
+      setLogin(false);
       if (error.response?.status === 403) {
-        console.log(error.response.message);
+        console.log(error.response.data.message);
       }
     }
   };
 
   /* MESSAGE OPTION TOGGLE */
-  const handleMessageDetailsIndex = (index) => {
+  const handleMessageDetailsIndex = (index: number) => {
     setMessageDetailsIndex((prev) => (prev === index ? null : index));
   };
 
   /* REACT TO MESSAGE */
-  const handleMessageReact = async (emoji, id) => {
+  const handleMessageReact = async (emoji: EmojiData, id: string) => {
     try {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, {
         reaction: emoji.emoji,
       });
 
       setMessageDetailsIndex(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error.message);
     }
   };
@@ -99,7 +105,7 @@ const Texting = ({ receiverId }) => {
   useEffect(() => {
     verifyUser();
     fetchMessages();
-  }, [receiverId]);
+  }, [receiverId, loginId]);
 
   /* REALTIME SOCKET MESSAGE LISTENER */
   useEffect(() => {
@@ -107,9 +113,13 @@ const Texting = ({ receiverId }) => {
 
     const latestMessage = socketMessages[socketMessages.length - 1];
 
-    const senderIdFromMsg = latestMessage.sender?._id || latestMessage.sender;
+    const senderIdFromMsg =
+      typeof latestMessage.sender === "string" ? latestMessage.sender : latestMessage.sender?._id;
 
-    const receiverIdFromMsg = latestMessage.receiver?._id || latestMessage.receiver;
+    const receiverIdFromMsg =
+      typeof latestMessage.receiver === "string"
+        ? latestMessage.receiver
+        : latestMessage.receiver?._id;
 
     // ensure message belongs to this chat
     const isCurrentChat =
@@ -120,7 +130,7 @@ const Texting = ({ receiverId }) => {
 
     if (!isCurrentChat) return;
 
-    console.log("📩 New message received via socket:", latestMessage);
+    console.log("New message received via socket:", latestMessage);
 
     setMessages((prev) => {
       const exists = prev.find((msg) => msg._id === latestMessage._id);
@@ -161,53 +171,58 @@ const Texting = ({ receiverId }) => {
         ) : (
           <div className="h-[85%] overflow-y-auto [&::-webkit-scrollbar]:w-[5px]">
             <div className="flex flex-col gap-[14px] pt-8 px-8">
-              {messages.map((res, index) => (
-                <div
-                  key={res._id || index}
-                  className={res.sender._id === loginId ? "flex justify-end" : "flex justify-start"}
-                >
+              {messages.map((res, index) => {
+                const senderId = typeof res.sender === "string" ? res.sender : res.sender?._id;
+                return (
                   <div
-                    className={`relative h-fit w-fit max-w-[65%] flex gap-[10px] items-end p-4 break-words rounded-[20px] ${
-                      res.sender._id === loginId
-                        ? "text-[20px] bg-secondary text-[#0d1f22]"
-                        : "bg-[#4d426d]"
-                    }`}
+                    key={res._id || index}
+                    className={senderId === loginId ? "flex justify-end" : "flex justify-start"}
                   >
-                    {res.message}
+                    <div
+                      className={`relative h-fit w-fit max-w-[65%] flex gap-[10px] items-end p-4 wrap-break-word rounded-[20px] ${
+                        senderId === loginId
+                          ? "text-[20px] bg-secondary text-[#0d1f22]"
+                          : "bg-[#4d426d]"
+                      }`}
+                    >
+                      {res.message}
 
-                    <span className="text-[10px] relative min-w-[48px]">
-                      <p className="m-0 p-0 absolute -top-[5px] right-0">
-                        {timeFormatter(res.timeStamp)}
-                      </p>
-                    </span>
+                      <span className="text-[10px] relative min-w-[48px]">
+                        <p className="m-0 p-0 absolute -top-[5px] right-0">
+                          {timeFormatter(res.timeStamp)}
+                        </p>
+                      </span>
 
-                    {res.sender._id === loginId && (
-                      <ChevronDown
-                        width={14}
-                        className="cursor-pointer"
-                        onClick={() => handleMessageDetailsIndex(index)}
-                      />
-                    )}
-
-                    {messageDetailsIndex === index && (
-                      <div className="absolute right-0 -top-[60px]">
-                        <EmojiPicker
-                          allowExpandReactions={false}
-                          onEmojiClick={(emoji) => handleMessageReact(emoji, res._id)}
-                          theme="dark"
-                          reactionsDefaultOpen
+                      {senderId === loginId && (
+                        <ChevronDown
+                          width={14}
+                          className="cursor-pointer"
+                          onClick={() => handleMessageDetailsIndex(index)}
                         />
-                      </div>
-                    )}
+                      )}
 
-                    {res.messageReaction && (
-                      <div className="absolute flex justify-center items-center w-[30px] h-[30px] right-0 -bottom-[10px] bg-primary rounded-full">
-                        {res.messageReaction}
-                      </div>
-                    )}
+                      {messageDetailsIndex === index && (
+                        <div className="absolute right-0 -top-[60px]">
+                          <EmojiPicker
+                            allowExpandReactions={false}
+                            onEmojiClick={(emoji: EmojiClickData) =>
+                              handleMessageReact(emoji as any, res._id || "")
+                            }
+                            theme={Theme.DARK}
+                            reactionsDefaultOpen
+                          />
+                        </div>
+                      )}
+
+                      {res.messageReaction && (
+                        <div className="absolute flex justify-center items-center w-[30px] h-[30px] right-0 -bottom-[10px] bg-primary rounded-full">
+                          {res.messageReaction}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div ref={chatSectionRef}></div>
             </div>

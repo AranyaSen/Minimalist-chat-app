@@ -1,14 +1,19 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { userLoginId, userLogInName } from "../../contexts/userContext";
+import useUserStore from "@/store/useUserStore";
+import { NavProps } from "@/components/Nav/Nav.types";
 
-const Nav = () => {
+const Nav: React.FC<NavProps> = () => {
   const navigate = useNavigate();
-  const dropdownRef = useRef(null);
-  const { loginName, setLoginName } = useContext(userLogInName);
-  const { loginId, setLoginId } = useContext(userLoginId);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // STORE VARIABLES
+  const loginName = useUserStore((state) => state.loginName);
+  const loginId = useUserStore((state) => state.loginId);
+  const clearAuth = useUserStore((state) => state.clearAuth);
+
   const token = document.cookie;
-  const [dropdown, setDropdown] = useState(false);
+  const [dropdown, setDropdown] = useState<boolean>(false);
 
   const handleProfileDropdown = () => {
     if (token && loginName) {
@@ -17,15 +22,13 @@ const Nav = () => {
   };
 
   const handleLogout = () => {
-    document.cookie = "token=; Path=/;Expires=Thu, 01 Jan 1970 00:00:00 UTC";
-    setLoginName(null);
-    setLoginId(null);
+    clearAuth();
     navigate("/signin");
   };
 
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdown(false);
       }
     };

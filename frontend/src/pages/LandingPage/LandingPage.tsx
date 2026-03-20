@@ -1,10 +1,11 @@
 import React from "react";
-import Nav from "../../components/Nav/Nav";
+import Nav from "@/components/Nav/Nav";
 import { ArrowRight, MessageSquare, Zap, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "../../images/hero.png";
+import heroImage from "@/assets/images/hero.png";
+import { LandingPageProps } from "@/pages/LandingPage/LandingPage.types";
 
-const LandingPage = () => {
+const LandingPage: React.FC<LandingPageProps> = () => {
   return (
     <div className="min-h-screen bg-primary text-white overflow-x-hidden">
       <Nav />

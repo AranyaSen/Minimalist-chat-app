@@ -1,6 +1,7 @@
 import React from "react";
+import { LoaderProps } from "@/components/Loader/Loader.types";
 
-const Loader = () => {
+const Loader: React.FC<LoaderProps> = () => {
   return (
     <div className="bg-[#88e7ff] h-screen w-screen">
       <div className="fixed top-0 left-0 w-full h-full">

@@ -1,17 +1,18 @@
-import { useContext, useState } from "react";
-import EmojiPicker from "emoji-picker-react";
-import { userLoginId } from "../../contexts/userContext";
-import { useChatSocket } from "../../hooks/useChatSocket";
+import React, { useState } from "react";
+import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
+import useUserStore from "@/store/useUserStore";
+import { useChatSocket } from "@/hooks/useChatSocket";
+import { ChatboxProps } from "@/components/Chatbox/Chatbox.types";
 
-const Chatbox = ({ receiverId }) => {
-  // CONTEXT VARIABLES
-  const { loginId } = useContext(userLoginId);
+const Chatbox: React.FC<ChatboxProps> = ({ receiverId }) => {
+  // STORE VARIABLES
+  const loginId = useUserStore((state) => state.loginId);
 
   const { sendMessage } = useChatSocket(loginId);
 
   //   STATE VARIABLES
-  const [userMessage, setUserMessage] = useState("");
-  const [showEmoji, setShowEmoji] = useState(false);
+  const [userMessage, setUserMessage] = useState<string>("");
+  const [showEmoji, setShowEmoji] = useState<boolean>(false);
 
   const handleSendMessage = () => {
     if (!userMessage.trim()) return;
@@ -56,10 +57,10 @@ const Chatbox = ({ receiverId }) => {
             <EmojiPicker
               width={"100%"}
               height={"400px"}
-              onEmojiClick={(e) => {
+              onEmojiClick={(e: EmojiClickData) => {
                 setUserMessage((prev) => prev + e.emoji);
               }}
-              theme="dark"
+              theme={Theme.DARK}
               skinTonesDisabled={true}
             />
           </div>
