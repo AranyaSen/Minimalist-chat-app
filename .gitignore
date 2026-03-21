@@ -404,3 +404,7 @@ node_modules
 
 # Env file
 .env
+
+#dist
+frontend/dist
+backend/dist
