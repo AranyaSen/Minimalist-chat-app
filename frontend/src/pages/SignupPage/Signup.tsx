@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Nav from "@/components/Nav/Nav";
-import { User, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "lucide-react";
 
 /**
  * Signup Component - Handles user registration
@@ -16,6 +16,8 @@ const Signup: React.FC = () => {
   const [nameError, setNameError] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [usernameError, setUsernameError] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
+  const [emailError, setEmailError] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
   const [passwordError, setPasswordError] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -39,9 +41,10 @@ const Signup: React.FC = () => {
    */
   const handleSignup = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!name || !username || !password) {
+    if (!name || !username || !email || !password) {
       setNameError(!name);
       setUsernameError(!username);
+      setEmailError(!email);
       setPasswordError(!password);
       return toast.error("Please enter proper details");
     }
@@ -50,6 +53,7 @@ const Signup: React.FC = () => {
     const formData = new FormData();
     formData.append("name", name);
     formData.append("username", username);
+    formData.append("email", email);
     formData.append("password", password);
     if (userImage) formData.append("image", userImage);
 
@@ -153,6 +157,35 @@ const Signup: React.FC = () => {
                       <p className="text-[10px] text-red-400 mt-1 ml-1">
                         Please enter your username
                       </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300 ml-1">Email Address</label>
+                    <div className="relative group">
+                      <div
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${emailError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                      >
+                        <Mail size={18} />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailError(false);
+                        }}
+                        onBlur={() => (!email ? setEmailError(true) : setEmailError(false))}
+                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          emailError
+                            ? "border-red-500/50 focus:ring-red-500/30"
+                            : "border-white/10 focus:border-secondary focus:ring-secondary/30"
+                        }`}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    {emailError && (
+                      <p className="text-[10px] text-red-400 mt-1 ml-1">Please enter your email</p>
                     )}
                   </div>
 

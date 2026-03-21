@@ -44,7 +44,8 @@ const SignIn: React.FC<SignInProps> = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/user/signin`,
-        signInData
+        signInData,
+        { withCredentials: true }
       );
 
       if (res.status === 200) {
