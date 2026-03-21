@@ -2,7 +2,7 @@ import { Request } from "express";
 import { Document } from "mongoose";
 
 export type UserType = Document & {
-  name: string;
+  fullName: string;
   username: string;
   email: string;
   password: string;

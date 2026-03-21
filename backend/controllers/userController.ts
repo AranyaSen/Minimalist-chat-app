@@ -7,7 +7,7 @@ import { generateAccessToken, generateRefreshToken } from "@/utils/token";
 import { responseHandler } from "@/utils/responseHandler";
 
 export const signupUser = asyncHandler(async (req: Request, res: Response) => {
-  const { name, username, email, password } = req.body;
+  const { fullName, username, email, password } = req.body;
 
   const userExists = await User.findOne({
     $or: [{ username }, { email }],
@@ -21,7 +21,7 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   const newUser = new User({
-    name,
+    fullName,
     username,
     email,
     password: hashedPassword,
@@ -37,7 +37,7 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   responseHandler(res, "User Created Successfully", 201, {
     user: {
       id: newUser._id,
-      name: newUser.name,
+      name: newUser.fullName,
       username: newUser.username,
       email: newUser.email,
     },
@@ -75,7 +75,7 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
   responseHandler(res, "User logged in successfully", 200, {
     user: {
       id: user._id,
-      name: user.name,
+      name: user.fullName,
       username: user.username,
       email: user.email,
     },
