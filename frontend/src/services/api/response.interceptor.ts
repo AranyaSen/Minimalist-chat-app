@@ -1,7 +1,12 @@
-import { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { ApiResponseType } from "@/types/api.types";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UserType } from "@/store/useAuthStore.types";
+
+const refreshClient = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:7000",
+  withCredentials: true,
+});
 
 export const setupResponseInterceptor = (apiClient: AxiosInstance) => {
   apiClient.interceptors.response.use(
@@ -21,16 +26,20 @@ export const setupResponseInterceptor = (apiClient: AxiosInstance) => {
       ) {
         originalRequest._retry = true;
         try {
-          const res: ApiResponseType<{ accessToken: string; user: UserType }> =
-            await apiClient.post("/api/auth/refresh");
+          const res =
+            await refreshClient.post<ApiResponseType<{ accessToken: string; user: UserType }>>(
+              "/api/auth/refresh"
+            );
 
-          if (res.success && res.data?.accessToken) {
+          const data = res.data;
+
+          if (data.success && data.data?.accessToken) {
             const { setAccessToken, setUser, setIsLoggedIn } = useAuthStore.getState();
-            setAccessToken(res.data.accessToken);
-            setUser(res.data.user);
+            setAccessToken(data.data.accessToken);
+            setUser(data.data.user);
             setIsLoggedIn(true);
 
-            originalRequest.headers["Authorization"] = `Bearer ${res.data.accessToken}`;
+            originalRequest.headers["Authorization"] = `Bearer ${data.data.accessToken}`;
             return apiClient(originalRequest);
           }
         } catch (refreshError) {

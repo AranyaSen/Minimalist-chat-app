@@ -1,34 +1,34 @@
 import { apiClient } from "@/services/api/apiClient";
-import { SignInFormData } from "@/pages/SinginPage/SignIn.types";
 import { ApiResponseType } from "@/types/api.types";
 
-import { User } from "@/pages/ChatPage/Chat.types";
-import { SiginInResponseType } from "./userService.types";
+import {
+  ConversationsListType,
+  ParticipantUser,
+} from "@/pages/ChatPage/Chat.types";
 
-export const signIn = (data: SignInFormData): Promise<ApiResponseType<SiginInResponseType>> => {
-  return apiClient.post("/api/auth/signin", data);
+export const getConversations = (
+  search?: string
+): Promise<ApiResponseType<ConversationsListType[]>> => {
+  const params = {
+    search: search ? search : undefined,
+  };
+  return apiClient.get("/api/chat", { params });
 };
 
-export const signUp = (formData: FormData): Promise<ApiResponseType> => {
-  return apiClient.post("/api/auth/signup", formData);
+export const initiateDirectChat = (
+  receiverId: string
+): Promise<ApiResponseType<ConversationsListType>> => {
+  return apiClient.post("/api/chat", { receiverId });
 };
 
-export const getUsers = (): Promise<ApiResponseType<User[]>> => {
-  return apiClient.get("/api/user");
-};
-
-export const verifyToken = (): Promise<ApiResponseType<User>> => {
-  return apiClient.get("/api/auth/profile");
-};
-
-export const refresh = (): Promise<ApiResponseType<SiginInResponseType>> => {
-  return apiClient.post("/api/auth/refresh");
+export const searchUsers = (
+  search: string
+): Promise<ApiResponseType<ParticipantUser[]>> => {
+  return apiClient.get("/api/user/search", { params: { search } });
 };
 
 export default {
-  signIn,
-  signUp,
-  getUsers,
-  verifyToken,
-  refresh,
+  getConversations,
+  initiateDirectChat,
+  searchUsers,
 };

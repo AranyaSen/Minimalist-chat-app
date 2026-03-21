@@ -4,11 +4,11 @@ import LandingPage from "@/pages/LandingPage/LandingPage";
 import Signup from "@/pages/SignupPage/Signup";
 import SignIn from "@/pages/SinginPage/SignIn";
 import { ChatPage } from "@/pages/ChatPage/ChatPage";
-import Texting from "@/components/Texting/Texting";
+
 import { ToastContainer } from "react-toastify";
 import { ProtectedRoute } from "@/guards/ProtectedRoute";
 import { NotFoundPage } from "@/pages/NotfoundPage/NotfoundPage";
-import { refresh } from "@/services/userService/userService";
+import { refresh } from "@/services/authService/authService";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UnprotectedRoute } from "@/guards/UnprotectedRoute";
 import "react-toastify/dist/ReactToastify.css";
@@ -50,7 +50,6 @@ const App = () => {
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:id" element={<Texting receiverId="" />} />
           </Route>
         </Routes>
       </BrowserRouter>

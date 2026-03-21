@@ -1,19 +1,26 @@
-export interface Message {
-  _id?: string;
-  sender: string | { _id: string; username: string };
-  receiver: string | { _id: string; username: string };
-  message: string;
-  timeStamp: string;
-  messageReaction?: string;
+export interface MessageType {
+  _id: string;
+  senderId:
+    | string
+    | {
+        _id: string;
+        fullName: string;
+        username: string;
+        email: string;
+      };
+  receiverId?: string;
+  chatId: string;
+  content: string;
+  messageType: string;
+  createdAt: string;
+  updatedAt?: string;
+  messageReaction?: { userId: string; type: string }[];
+  isDeleted?: boolean;
 }
 
-export interface SocketPayload {
-  senderId: string;
-  receiverId: string;
-  messageContent: string;
-}
-
-export interface ReactionPayload {
+export interface ReadReceiptPayload {
+  chatId: string;
+  userId: string;
   messageId: string;
-  reaction: string;
+  readAt: string;
 }

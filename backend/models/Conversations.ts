@@ -11,7 +11,7 @@ const conversationSchema: Schema<ConversationType> = new mongoose.Schema(
 
     participants: [
       {
-        userId: {
+        user: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
         },

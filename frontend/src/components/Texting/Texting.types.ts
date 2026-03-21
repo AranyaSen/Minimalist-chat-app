@@ -1,6 +1,5 @@
-
-
 export interface TextingProps {
+  chatId: string;
   receiverId: string;
 }
 

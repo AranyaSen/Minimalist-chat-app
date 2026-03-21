@@ -1,5 +1,5 @@
 import express from "express";
-import { signupSchema, signinSchema } from "@/validators/userValidator";
+import { signupSchema, signinSchema } from "@/validators/authValidator";
 import { validate } from "@/middlewares/validationMiddleware";
 import {
   signupUser,

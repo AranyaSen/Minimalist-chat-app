@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.94.5",
     "axios": "^1.7.9",
     "emoji-picker-react": "^4.12.3",
     "jwt-decode": "^4.0.0",
@@ -32,8 +33,6 @@
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/react-router-dom": "^5.3.3",
-    "@types/socket.io-client": "^1.4.36",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.19.0",
     "eslint-plugin-react": "^7.37.4",

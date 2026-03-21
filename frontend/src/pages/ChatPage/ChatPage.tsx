@@ -1,76 +1,279 @@
-import { useState, useEffect } from "react";
-import { Loader } from "@/components/Loader/Loader";
+import { useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  User as UserIcon,
+  Search,
+  MoreVertical,
+  MessageCircle,
+} from "lucide-react";
 import Nav from "@/components/Nav/Nav";
 import Texting from "@/components/Texting/Texting";
-import { User } from "@/pages/ChatPage/Chat.types";
-import { getUsers } from "@/services/userService/userService";
+import { ConversationsListType, ParticipantUser } from "./Chat.types";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useConversationsQuery } from "@/queries/useConversationsQuery";
+import { ConversationsLoader } from "@/components/ConversationsLoader/ConversationsLoader";
+import { initiateDirectChat } from "@/services/userService/userService";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSearchUsersQuery } from "@/queries/useSearchUsersQuery";
+import { useChatSocket } from "@/hooks/useChatSocket";
 
 export const ChatPage = () => {
-  // STATE VARIABLES
-  const [users, setUsers] = useState<User[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user: currentUser } = useAuthStore();
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedReceiverId, setSelectedReceiverId] = useState<string | null>(
+    null
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
 
-  const handleUser = (user: User) => {
-    setUserId(user._id);
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
+  // Initialize socket connection
+  useChatSocket(currentUser?.id || "");
+
+  // Base list of existing conversations
+  const { data: conversationList = [], isLoading: isConversationsLoading } =
+    useConversationsQuery();
+
+  // Search results for users
+  const { data: searchedUsers = [], isLoading: isSearchLoading } =
+    useSearchUsersQuery(debouncedSearch);
+
+  const isSearching = !!debouncedSearch;
+  const showLoading =
+    (!isSearching && isConversationsLoading) ||
+    (isSearching && isSearchLoading) ||
+    searchQuery !== debouncedSearch;
+
+  const getOtherUser = (
+    conversation: ConversationsListType
+  ): ParticipantUser | null => {
+    const otherParticipant = conversation.participants.find(
+      (p) => p.user._id !== currentUser?.id
+    );
+    return otherParticipant?.user || null;
   };
 
-  const getUsersList = async () => {
+  const getImageSrc = (user: ParticipantUser): string | null => {
+    if (!user.image?.data?.data || !user.image?.contentType) return null;
+    const base64 = btoa(
+      String.fromCharCode(...new Uint8Array(user.image.data.data))
+    );
+    return `data:${user.image.contentType};base64,${base64}`;
+  };
+
+  const handleUserSelect = async (userId: string) => {
     try {
-      const res = await getUsers();
+      const res = await initiateDirectChat(userId);
       if (res.success) {
-        setUsers(res.data);
+        const chatId = res.data._id;
+        const otherUser = res.data.participants?.find(
+          (p: { user: { _id: string } | string }) => {
+            const uid =
+              typeof p.user === "string" ? p.user : p.user._id;
+            return uid !== currentUser?.id;
+          }
+        );
+        const receiverId =
+          typeof otherUser?.user === "string"
+            ? otherUser.user
+            : otherUser?.user?._id || userId;
+
+        setSelectedChatId(chatId);
+        setSelectedReceiverId(receiverId);
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        setSearchQuery("");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to initiate chat:", err);
     }
   };
 
-  useEffect(() => {
-    getUsersList();
-  }, []);
-
-  if (users.length === 0) {
-    return <Loader />;
-  }
-
   return (
-    <>
+    <div className="min-h-screen bg-primary flex flex-col overflow-hidden">
       <Nav />
-      <div className="w-full flex justify-center">
-        <div className="flex rounded-md w-[95%] h-[80vh] gap-20 max-md:w-[90%] max-md:px-4 max-md:py-8">
-          <div className="relative w-1/5 h-full flex justify-center items-center shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
-            <div className="flex flex-col items-center w-full h-full overflow-y-auto bg-primary rounded-[20px] [&::-webkit-scrollbar]:w-0 max-md:h-full max-md:gap-[15px] max-md:rounded-lg">
-              {users.map((user, index) => (
-                <div
-                  className="w-full cursor-pointer h-[90px] border-b border-[#878296] last:border-b-0 hover:bg-primary-hover transition-colors duration-300 max-md:w-[80%] max-md:h-auto"
-                  key={index}
-                  onClick={() => handleUser(user)}
-                >
-                  <div className="flex gap-3 px-5 py-2">
-                    <div className="w-[65px] h-[65px]">
-                      <img
-                        className="w-full h-full rounded-full"
-                        src={`${import.meta.env.VITE_BACKEND_URL}/api/user/${user._id}/image`}
-                        alt={user.name}
-                      />
-                    </div>
-                    {/* <div className="flex h-full items-center">
-                      {user._id === loginId ? (
-                        <span className="font-medium">You</span>
-                      ) : (
-                        <span className="font-medium">{user.name}</span>
-                      )}
-                    </div> */}
-                  </div>
-                </div>
-              ))}
+
+      <main className="flex-1 pt-24 pb-6 px-4 md:px-8 max-w-7xl mx-auto w-full flex gap-6 overflow-hidden">
+        {/* Sidebar: Conversation List */}
+        <aside className="w-full md:w-80 lg:w-96 flex flex-col bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-300">
+          {/* Sidebar Header */}
+          <div className="p-6 border-b border-white/5 bg-white/5">
+            <h2 className="text-2xl font-bold mb-4 flex items-center justify-between">
+              Messages
+              <button className="p-2 hover:bg-white/10 rounded-full transition-all">
+                <MoreVertical size={20} className="text-gray-400" />
+              </button>
+            </h2>
+            <div className="relative group">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-secondary transition-colors"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/30 transition-all font-medium"
+              />
             </div>
           </div>
-          <div className="relative w-4/5 h-full shadow-[0_10px_20px_rgba(0,0,0,0.25)]">
-            <Texting receiverId={userId || ""} />
+
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20">
+            {showLoading ? (
+              <ConversationsLoader />
+            ) : isSearching ? (
+              searchedUsers.length > 0 ? (
+                searchedUsers.map((user) => {
+                  const imageSrc = getImageSrc(user);
+                  return (
+                    <div
+                      key={user._id}
+                      onClick={() => handleUserSelect(user._id)}
+                      className="flex items-center gap-4 p-4 cursor-pointer rounded-2xl transition-all duration-300 group hover:bg-white/5"
+                    >
+                      {/* Avatar */}
+                      <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border-2 border-secondary/20 group-hover:border-secondary/50 transition-colors">
+                        {imageSrc ? (
+                          <img
+                            className="w-full h-full object-cover"
+                            src={imageSrc}
+                            alt={user.fullName}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-secondary/10">
+                            <UserIcon className="text-secondary" size={24} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* User Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold truncate text-white">
+                          {user.fullName}
+                        </h3>
+                        <p className="text-xs truncate text-gray-400">
+                          @{user.username}
+                        </p>
+                        <p className="text-xs mt-1 truncate flex items-center gap-1 text-gray-500">
+                          <MessageCircle size={12} />
+                          <span className="italic">Click to start chat</span>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-gray-500 opacity-60">
+                  <Search size={32} className="mb-2" />
+                  <p className="text-sm">No users found</p>
+                </div>
+              )
+            ) : conversationList.length > 0 ? (
+              conversationList.map((conversation) => {
+                const otherUser = getOtherUser(conversation);
+                const isSelected = selectedChatId === conversation._id;
+                const imageSrc = otherUser ? getImageSrc(otherUser) : null;
+
+                return (
+                  <div
+                    key={conversation._id}
+                    onClick={() =>
+                      otherUser && handleUserSelect(otherUser._id)
+                    }
+                    className={`flex items-center gap-4 p-4 cursor-pointer rounded-2xl transition-all duration-300 group ${
+                      isSelected
+                        ? "bg-secondary text-primary shadow-lg shadow-secondary/20"
+                        : "hover:bg-white/5"
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div
+                      className={`relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border-2 transition-colors ${
+                        isSelected
+                          ? "border-primary/20"
+                          : "border-secondary/20 group-hover:border-secondary/50"
+                      }`}
+                    >
+                      {imageSrc ? (
+                        <img
+                          className="w-full h-full object-cover"
+                          src={imageSrc}
+                          alt={otherUser?.fullName}
+                        />
+                      ) : (
+                        <div
+                          className={`w-full h-full flex items-center justify-center ${
+                            isSelected ? "bg-primary/10" : "bg-secondary/10"
+                          }`}
+                        >
+                          <UserIcon
+                            className={
+                              isSelected ? "text-primary/70" : "text-secondary"
+                            }
+                            size={24}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* User Info & Last Message */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-0.5">
+                        <h3
+                          className={`font-bold truncate ${
+                            isSelected ? "text-primary" : "text-white"
+                          }`}
+                        >
+                          {otherUser?.fullName || "Unknown User"}
+                        </h3>
+                      </div>
+                      <p
+                        className={`text-xs truncate ${
+                          isSelected ? "text-primary/70" : "text-gray-400"
+                        }`}
+                      >
+                        @{otherUser?.username || "unknown"}
+                      </p>
+                      <p
+                        className={`text-xs mt-1 truncate flex items-center gap-1 ${
+                          isSelected ? "text-primary/60" : "text-gray-500"
+                        }`}
+                      >
+                        {conversation.lastMessage?.content ? (
+                          conversation.lastMessage.content
+                        ) : (
+                          <>
+                            <MessageCircle size={12} />
+                            <span className="italic">Start a conversation</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-gray-500 opacity-60">
+                <Search size={32} className="mb-2" />
+                <p className="text-sm">No conversations found</p>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-    </>
+        </aside>
+
+        {/* Main Content: Chat Window */}
+        <section
+          className={`flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300 ${!selectedChatId ? "hidden md:flex" : "flex"}`}
+        >
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px] pointer-events-none"></div>
+          <Texting
+            chatId={selectedChatId || ""}
+            receiverId={selectedReceiverId || ""}
+          />
+        </section>
+      </main>
+    </div>
   );
 };

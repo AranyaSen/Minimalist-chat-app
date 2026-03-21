@@ -6,7 +6,7 @@ import { User, Lock, LogIn, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { signInSchema, SignInFormData } from "@/pages/SinginPage/SignIn.types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "@/services/userService/userService";
+import { signIn } from "@/services/authService/authService";
 import { handleError } from "@/utils/errorHandler";
 import { useAuthStore } from "@/store/useAuthStore";
 

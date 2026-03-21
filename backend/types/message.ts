@@ -1,4 +1,6 @@
 import { Document, Types } from "mongoose";
+import { UserType } from "./user";
+import { ConversationPopulatedType } from "./conversation";
 
 export type MessageType = Document & {
   senderId: Types.ObjectId;
@@ -14,4 +16,9 @@ export type MessageType = Document & {
     userId: Types.ObjectId;
     type: string;
   }[];
+};
+
+export type MessagePopulatedType = Omit<MessageType, "senderId" | "chatId"> & {
+  senderId: UserType;
+  chatId: ConversationPopulatedType;
 };
