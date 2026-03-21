@@ -2,22 +2,15 @@ import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
-import useUserStore from "@/store/useUserStore";
 import Nav from "@/components/Nav/Nav";
 import { User, Lock, LogIn, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { jwtDecode } from "jwt-decode";
 import { SignInProps } from "@/pages/SinginPage/SignIn.types";
-import { DecodedToken } from "@/store/useUserStore.types";
 
 /**
  * SignIn Component - Handles user login
  */
 const SignIn: React.FC<SignInProps> = () => {
   const navigate = useNavigate();
-
-  // STORE VARIABLES
-  const setLoginName = useUserStore((state) => state.setLoginName);
-  const setLoginId = useUserStore((state) => state.setLoginId);
 
   // STATE VARIABLES
   const [username, setUsername] = useState<string>("");
@@ -50,13 +43,6 @@ const SignIn: React.FC<SignInProps> = () => {
 
       if (res.status === 200) {
         toast.success(res.data.message || "Login successful!");
-
-        const decodedToken = jwtDecode<DecodedToken & { username: string; userId: string }>(
-          res.data.token
-        );
-        // Map original field names from token if they differ
-        setLoginName(decodedToken.username || (decodedToken as any).name);
-        setLoginId(decodedToken.userId || (decodedToken as any).id);
 
         // Store token in cookies
         document.cookie = `token=${res.data.token}; Path=/; Max-Age=1200`;
