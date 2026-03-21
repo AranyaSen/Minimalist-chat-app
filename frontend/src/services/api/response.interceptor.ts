@@ -10,26 +10,34 @@ export const setupResponseInterceptor = (apiClient: AxiosInstance) => {
     },
 
     async (error: AxiosError<ApiResponseType<any>>) => {
-      const errorMessage = error.response?.data?.message;
       const originalRequest: (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined =
         error.config;
 
       if (!originalRequest) return Promise.reject(error);
 
-      if (errorMessage === "Invalid or expired token" && !originalRequest._retry) {
+      if (
+        (error.response?.status === 401 || error.response?.status === 403) &&
+        !originalRequest._retry
+      ) {
         originalRequest._retry = true;
         try {
           const res: ApiResponseType<{ accessToken: string; user: UserType }> =
             await apiClient.post("/api/auth/refresh");
 
           if (res.success && res.data?.accessToken) {
-            useAuthStore.getState().setAccessToken(res.data?.accessToken);
-            useAuthStore.getState().setUser(res.data?.user);
+            const { setAccessToken, setUser, setIsLoggedIn } = useAuthStore.getState();
+            setAccessToken(res.data.accessToken);
+            setUser(res.data.user);
+            setIsLoggedIn(true);
 
             originalRequest.headers["Authorization"] = `Bearer ${res.data.accessToken}`;
             return apiClient(originalRequest);
           }
         } catch (refreshError) {
+          const { setAccessToken, setUser, setIsLoggedIn } = useAuthStore.getState();
+          setAccessToken("");
+          setUser(null);
+          setIsLoggedIn(false);
           return Promise.reject(refreshError);
         }
       }

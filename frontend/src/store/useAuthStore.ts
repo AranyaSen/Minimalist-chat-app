@@ -5,7 +5,9 @@ export const useAuthStore = create<UseAuthStoreType>((set) => ({
   isLoggedIn: false,
   accessToken: "",
   user: null,
+  isCheckingAuth: true,
   setIsLoggedIn: (isLoggedIn: boolean) => set({ isLoggedIn }),
   setAccessToken: (accessToken: string) => set({ accessToken }),
-  setUser: (user: UserType) => set({ user }),
+  setUser: (user: UserType | null) => set({ user }),
+  setIsCheckingAuth: (isCheckingAuth: boolean) => set({ isCheckingAuth }),
 }));

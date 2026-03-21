@@ -1,5 +1,5 @@
 import axios from "axios";
-// import { setupRequestInterceptor } from "./request.interceptor";
+import { setupRequestInterceptor } from "./request.interceptor";
 import { setupResponseInterceptor } from "./response.interceptor";
 
 export const apiClient = axios.create({
@@ -7,5 +7,5 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// setupRequestInterceptor(apiClient);
+setupRequestInterceptor(apiClient);
 setupResponseInterceptor(apiClient);

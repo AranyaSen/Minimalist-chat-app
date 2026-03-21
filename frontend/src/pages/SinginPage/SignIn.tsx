@@ -1,20 +1,23 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import Nav from "@/components/Nav/Nav";
 import { User, Lock, LogIn, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { SignInProps, signInSchema, SignInFormData } from "@/pages/SinginPage/SignIn.types";
+import { signInSchema, SignInFormData } from "@/pages/SinginPage/SignIn.types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "@/services/userService";
+import { signIn } from "@/services/userService/userService";
 import { handleError } from "@/utils/errorHandler";
+import { useAuthStore } from "@/store/useAuthStore";
 
-const SignIn: React.FC<SignInProps> = () => {
+const SignIn = () => {
   const navigate = useNavigate();
 
   // State variable declarations
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { setUser, setIsLoggedIn, setAccessToken } = useAuthStore();
 
   // React hook form setup
   const {
@@ -36,8 +39,11 @@ const SignIn: React.FC<SignInProps> = () => {
     try {
       const res = await signIn(data);
       if (res.success) {
+        setUser(res.data?.user);
+        setAccessToken(res.data?.accessToken);
+        setIsLoggedIn(true);
         toast.success(res?.message);
-        navigate("/users");
+        navigate("/chat");
       }
     } catch (err) {
       const errorMessage = handleError(err);

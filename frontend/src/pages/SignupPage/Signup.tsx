@@ -6,7 +6,7 @@ import { User, Mail, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "luc
 import { signupSchema, SignupFormData } from "@/pages/SignupPage/Signup.types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signUp } from "@/services/userService";
+import { signUp } from "@/services/userService/userService";
 import { handleError } from "@/utils/errorHandler";
 
 const Signup: React.FC = () => {

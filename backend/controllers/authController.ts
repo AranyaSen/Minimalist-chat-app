@@ -85,9 +85,10 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
   responseHandler(res, "User logged in successfully", 200, {
     user: {
       id: user._id,
-      name: user.fullName,
+      fullName: user.fullName,
       username: user.username,
       email: user.email,
+      image: user?.image,
     },
     accessToken,
   });
@@ -126,9 +127,10 @@ export const refreshAccessToken = asyncHandler(
       accessToken,
       user: {
         id: user._id,
-        name: user.fullName,
+        fullName: user.fullName,
         username: user.username,
         email: user.email,
+        image: user?.image,
       },
     });
   }
@@ -149,9 +151,10 @@ export const profile = asyncHandler(async (req: Request, res: Response) => {
   responseHandler(res, "User profile", 200, {
     user: {
       id: user._id,
-      name: user.fullName,
+      fullName: user.fullName,
       username: user.username,
       email: user.email,
+      image: user?.image,
     },
   });
 });

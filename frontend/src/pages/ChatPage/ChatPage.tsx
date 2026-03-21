@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
-import Loader from "@/components/Loader/Loader";
+import { useState, useEffect } from "react";
+import { Loader } from "@/components/Loader/Loader";
 import Nav from "@/components/Nav/Nav";
 import Texting from "@/components/Texting/Texting";
-import { User, UsersProps } from "@/pages/UsersPage/Users.types";
-import { getUsers, verifyToken as verifyTokenService } from "@/services/userService";
+import { User } from "@/pages/ChatPage/Chat.types";
+import { getUsers } from "@/services/userService/userService";
 
-const Message: React.FC<UsersProps> = () => {
+export const ChatPage = () => {
   // STATE VARIABLES
   const [users, setUsers] = useState<User[]>([]);
-  const [login, setLogin] = useState<boolean | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
 
   const handleUser = (user: User) => {
@@ -26,36 +25,11 @@ const Message: React.FC<UsersProps> = () => {
     }
   };
 
-  const verifyUser = async () => {
-    try {
-      const cookies = document.cookie.split(";");
-      const jwtToken = cookies.find((token) => token.trim().startsWith("token"));
-      if (jwtToken) {
-        const token = jwtToken.split("=")[1];
-        const res = await verifyTokenService(token);
-        if (res.success) {
-          setLogin(true);
-        } else {
-          setLogin(false);
-        }
-      } else {
-        setLogin(false);
-      }
-    } catch (error: unknown) {
-      setLogin(false);
-      const axiosError = error as { response?: { status: number; data?: { message: string } } };
-      if (axiosError.response && axiosError.response.status === 403) {
-        console.log(axiosError.response.data?.message);
-      }
-    }
-  };
-
   useEffect(() => {
-    verifyUser();
     getUsersList();
   }, []);
 
-  if (login === undefined) {
+  if (users.length === 0) {
     return <Loader />;
   }
 
@@ -100,5 +74,3 @@ const Message: React.FC<UsersProps> = () => {
     </>
   );
 };
-
-export default Message;

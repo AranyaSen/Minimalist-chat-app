@@ -45,7 +45,7 @@
 @layer base {
   body {
     margin: 0;
-    padding: 2rem;
+    padding: 0;
     background-color: #4d426d;
     color: whitesmoke;
     font-family: var(--font-mono);
