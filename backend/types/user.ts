@@ -11,6 +11,7 @@ export type UserType = Document & {
     contentType: string;
     data: Buffer;
   };
+  refreshToken?: string;
 };
 
 export interface AuthRequest extends Request {

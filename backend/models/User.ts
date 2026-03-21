@@ -11,6 +11,7 @@ const userSchema: Schema<UserType> = new mongoose.Schema({
     contentType: String,
     data: Buffer,
   },
+  refreshToken: { type: String, default: "" },
 });
 
 const User: Model<UserType> = mongoose.model<UserType>("User", userSchema);

@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import asyncHandler from "@/utils/asyncHandler";
 import { generateAccessToken, generateRefreshToken } from "@/utils/token";
+import { responseHandler } from "@/utils/responseHandler";
 
 export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   const { name, username, email, password } = req.body;
@@ -33,8 +34,7 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   });
 
   await newUser.save();
-  res.status(201).json({
-    message: "User Created Successfully",
+  responseHandler(res, "User Created Successfully", 201, {
     user: {
       id: newUser._id,
       name: newUser.name,
@@ -62,15 +62,17 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
   const accessToken = generateAccessToken(user._id, user.username);
   const refreshToken = generateRefreshToken(user?._id, user.username);
 
+  user.refreshToken = refreshToken;
+  await user.save();
+
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: process.env.ENVIRONMENT === "prod",
+    sameSite: "strict",
     maxAge: 24 * 60 * 60 * 1000,
   });
 
-  res.status(200).json({
-    message: "User verified",
+  responseHandler(res, "User logged in successfully", 200, {
     user: {
       id: user._id,
       name: user.name,
@@ -81,12 +83,44 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+export const refreshAccessToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      res.status(401);
+      throw new Error("Refresh token not found");
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        refreshToken,
+        process.env.JWT_SECRET as string
+      ) as any;
+    } catch (err) {
+      res.status(403);
+      throw new Error("Invalid or expired refresh token");
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || user.refreshToken !== refreshToken) {
+      res.status(403);
+      throw new Error("Invalid refresh token");
+    }
+
+    const accessToken = generateAccessToken(user._id, user.username);
+    responseHandler(res, "Access token refreshed successfully", 200, {
+      accessToken,
+    });
+  }
+);
+
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const users = await User.find().select("-password");
   if (users.length > 0) {
-    res.status(200).json(users);
+    responseHandler(res, "Users fetched successfully", 200, users);
   } else {
-    res.status(200).json({ message: "No users created" });
+    responseHandler(res, "No users created", 200);
   }
 });
 
@@ -114,9 +148,9 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   const username = user.username;
   await User.findByIdAndDelete(req.params.id);
 
-  res.status(200).json({ message: `Deleted user ${username}` });
+  responseHandler(res, `Deleted user ${username}`, 200);
 });
 
 export const verifyUser = (req: Request, res: Response) => {
-  res.json({ message: `User verified` });
+  responseHandler(res, "User verified", 200);
 };

@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "@/types/user";
+import { responseHandler } from "@/utils/responseHandler";
 
 export const authMiddleware = (
   req: AuthRequest,
@@ -11,7 +12,7 @@ export const authMiddleware = (
     req.headers["authorization"]?.split(" ")[1] || req.cookies?.token;
 
   if (!token) {
-    return res.status(403).json({ message: "Access denied" });
+    return responseHandler(res, "Access denied", 403);
   }
 
   jwt.verify(
@@ -19,7 +20,7 @@ export const authMiddleware = (
     process.env.JWT_SECRET as string,
     (err: any, decoded: any) => {
       if (err) {
-        return res.status(403).json({ message: "Invalid or expired token" });
+        return responseHandler(res, "Invalid or expired token", 403);
       }
       req.user = decoded;
       next();

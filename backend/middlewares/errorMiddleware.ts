@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { responseHandler } from "@/utils/responseHandler";
 
 export const errorHandler = (
   err: any,
@@ -7,10 +8,7 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  res.status(statusCode).json({
-    message: err.message,
-    // stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-  });
+  responseHandler(res, err.message, statusCode);
 };
 
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
