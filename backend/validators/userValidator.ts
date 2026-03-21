@@ -1,8 +1,8 @@
 import Joi from "joi";
 
 export const signupSchema = Joi.object({
-  name: Joi.string().required().messages({
-    "string.empty": "Name is required",
+  fullName: Joi.string().required().messages({
+    "string.empty": "Full name is required",
   }),
   username: Joi.string().required().messages({
     "string.empty": "Username is required",

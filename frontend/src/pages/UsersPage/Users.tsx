@@ -18,7 +18,7 @@ const Message: React.FC<UsersProps> = () => {
   const getUsersList = async () => {
     try {
       const res = await getUsers();
-      if (res.status === 200) {
+      if (res.success) {
         setUsers(res.data);
       }
     } catch (err) {
@@ -33,7 +33,7 @@ const Message: React.FC<UsersProps> = () => {
       if (jwtToken) {
         const token = jwtToken.split("=")[1];
         const res = await verifyTokenService(token);
-        if (res.status === 200) {
+        if (res.success) {
           setLogin(true);
         } else {
           setLogin(false);
@@ -41,10 +41,11 @@ const Message: React.FC<UsersProps> = () => {
       } else {
         setLogin(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLogin(false);
-      if (error.response && error.response.status === 403) {
-        console.log(error.response.data.message);
+      const axiosError = error as { response?: { status: number; data?: { message: string } } };
+      if (axiosError.response && axiosError.response.status === 403) {
+        console.log(axiosError.response.data?.message);
       }
     }
   };

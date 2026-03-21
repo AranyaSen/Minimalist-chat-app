@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
-import { useChatSocket } from "@/hooks/useChatSocket";
 import { ChatboxProps } from "@/components/Chatbox/Chatbox.types";
 
-const Chatbox: React.FC<ChatboxProps> = ({ receiverId }) => {
+const Chatbox: React.FC<ChatboxProps> = ({}) => {
 
   //   STATE VARIABLES
   const [userMessage, setUserMessage] = useState<string>("");

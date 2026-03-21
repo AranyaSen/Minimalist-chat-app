@@ -2,7 +2,7 @@ export interface User {
   _id: string;
   name: string;
   username: string;
-  // Add other fields as needed from API response
+  email: string;
 }
 
 export interface UsersProps {}

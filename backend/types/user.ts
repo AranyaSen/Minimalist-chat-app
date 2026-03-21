@@ -14,13 +14,6 @@ export type UserType = Document & {
   refreshToken?: string;
 };
 
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    username: string;
-  };
-}
-
 declare global {
   namespace Express {
     interface Request {

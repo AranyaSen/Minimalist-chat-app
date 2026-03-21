@@ -1,20 +1,17 @@
 import React, { useEffect, useRef, useState, memo } from "react";
-import Loader from "@/components/Loader/Loader";
 import Chatbox from "@/components/Chatbox/Chatbox";
 import { ChevronDown } from "lucide-react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import { TextingProps, EmojiData } from "@/components/Texting/Texting.types";
 import { Message } from "@/hooks/useChatSocket.types";
-import { getConversation, reactToMessage } from "@/services/messageService";
-import { verifyToken } from "@/services/userService";
+import { reactToMessage } from "@/services/messageService";
 
 const Texting: React.FC<TextingProps> = ({ receiverId }) => {
   const chatSectionRef = useRef<HTMLDivElement>(null);
 
   /* STATE */
-  const [login, setLogin] = useState<boolean | undefined>(undefined);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [noMessage, setNoMessages] = useState<boolean>(false);
+  const [messages] = useState<Message[]>([]);
+  const [noMessage] = useState<boolean>(false);
   const [messageDetailsIndex, setMessageDetailsIndex] = useState<number | null>(null);
 
   const timeFormatter = (time: string) => {
@@ -36,8 +33,10 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
       await reactToMessage(id, emoji.emoji);
 
       setMessageDetailsIndex(null);
-    } catch (error: any) {
-      console.error(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
     }
   };
 
@@ -46,7 +45,6 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
     chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (login === undefined) return <Loader />;
 
   if (!receiverId) {
     return (
@@ -105,7 +103,7 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
                           <EmojiPicker
                             allowExpandReactions={false}
                             onEmojiClick={(emoji: EmojiClickData) =>
-                              handleMessageReact(emoji as any, res._id || "")
+                              handleMessageReact(emoji as EmojiData, res._id || "")
                             }
                             theme={Theme.DARK}
                             reactionsDefaultOpen

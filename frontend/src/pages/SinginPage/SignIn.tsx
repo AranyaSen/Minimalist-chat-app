@@ -7,15 +7,16 @@ import { SignInProps, signInSchema, SignInFormData } from "@/pages/SinginPage/Si
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "@/services/userService";
+import { handleError } from "@/utils/errorHandler";
 
 const SignIn: React.FC<SignInProps> = () => {
   const navigate = useNavigate();
 
-  // STATE VARIABLES
+  // State variable declarations
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // REACT HOOK FORM SETUP
+  // React hook form setup
   const {
     register,
     handleSubmit,
@@ -28,26 +29,19 @@ const SignIn: React.FC<SignInProps> = () => {
     },
   });
 
+  // Form submission handler
   const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
 
     try {
       const res = await signIn(data);
-
-      if (res.status === 200) {
-        toast.success(res.data.message || "Login successful!");
-
-        // Store token in cookies
-        document.cookie = `token=${res.data.token}; Path=/; Max-Age=1200`;
-
+      if (res.success) {
+        toast.success(res?.message);
         navigate("/users");
       }
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        toast.error(err.response.data.message);
-      } else {
-        toast.error("Login failed");
-      }
+    } catch (err) {
+      const errorMessage = handleError(err);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -76,47 +70,49 @@ const SignIn: React.FC<SignInProps> = () => {
                 <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.username ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.username ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                   >
                     <User size={18} />
                   </div>
                   <input
                     type="text"
                     {...register("username")}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
                       errors.username
-                        ? "border-red-500/50 focus:ring-red-500/30"
+                        ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
                     placeholder="your_username"
                   />
                 </div>
                 {errors.username && (
-                  <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    {errors.username.message}
-                  </p>
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                    <p className="text-[11px] font-black text-white drop-shadow-sm">
+                      {errors.username.message}
+                    </p>
+                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
                   <label className="text-sm font-medium text-gray-300">Password</label>
-                  <a href="#" className="text-xs text-secondary hover:underline transition-all">
+                  {/* <a href="#" className="text-xs text-secondary hover:underline transition-all">
                     Forgot password?
-                  </a>
+                  </a> */}
                 </div>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.password ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                   >
                     <Lock size={18} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
+                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
                       errors.password
-                        ? "border-red-500/50 focus:ring-red-500/30"
+                        ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
                     placeholder="••••••••"
@@ -126,13 +122,19 @@ const SignIn: React.FC<SignInProps> = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-secondary transition-colors"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? (
+                      <EyeOff size={18} color="var(--color-secondary)" />
+                    ) : (
+                      <Eye size={18} color="var(--color-secondary)" />
+                    )}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    {errors.password.message}
-                  </p>
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                    <p className="text-[11px] font-black text-white drop-shadow-sm">
+                      {errors.password.message}
+                    </p>
+                  </div>
                 )}
               </div>
 

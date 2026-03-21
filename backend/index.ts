@@ -5,6 +5,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import connectDB from "@/config/db";
+import authRoutes from "@/routes/authRoutes";
 import userRoutes from "@/routes/userRoutes";
 import messageRoutes from "@/routes/messageRoutes";
 import conversationRoutes from "@/routes/conversationRoutes";
@@ -37,6 +38,7 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/chat", conversationRoutes);

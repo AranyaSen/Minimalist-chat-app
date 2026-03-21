@@ -3,7 +3,7 @@ import asyncHandler from "@/utils/asyncHandler";
 import { responseHandler } from "@/utils/responseHandler";
 import Conversation from "@/models/Conversations";
 import User from "@/models/User";
-import { AuthRequest } from "@/types/user";
+import { AuthRequest } from "@/types/auth";
 
 // Access or create a direct chat
 export const accessChat = asyncHandler(

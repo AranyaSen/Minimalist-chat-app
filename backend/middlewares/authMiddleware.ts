@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { AuthRequest } from "@/types/user";
 import { responseHandler } from "@/utils/responseHandler";
+import { AuthRequest } from "@/types/auth";
 
 export const authMiddleware = (
   req: AuthRequest,
