@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import Loader from "@/components/Loader/Loader";
 import Nav from "@/components/Nav/Nav";
 import Texting from "@/components/Texting/Texting";
-import useUserStore from "@/store/useUserStore";
 import { User, UsersProps } from "@/pages/UsersPage/Users.types";
+import { getUsers, verifyToken as verifyTokenService } from "@/services/userService";
 
 const Message: React.FC<UsersProps> = () => {
   // STATE VARIABLES
   const [users, setUsers] = useState<User[]>([]);
   const [login, setLogin] = useState<boolean | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
-  const loginId = useUserStore((state) => state.loginId);
 
   const handleUser = (user: User) => {
     setUserId(user._id);
@@ -19,7 +17,7 @@ const Message: React.FC<UsersProps> = () => {
 
   const getUsersList = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user`);
+      const res = await getUsers();
       if (res.status === 200) {
         setUsers(res.data);
       }
@@ -34,9 +32,7 @@ const Message: React.FC<UsersProps> = () => {
       const jwtToken = cookies.find((token) => token.trim().startsWith("token"));
       if (jwtToken) {
         const token = jwtToken.split("=")[1];
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/verify`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await verifyTokenService(token);
         if (res.status === 200) {
           setLogin(true);
         } else {
@@ -83,13 +79,13 @@ const Message: React.FC<UsersProps> = () => {
                         alt={user.name}
                       />
                     </div>
-                    <div className="flex h-full items-center">
+                    {/* <div className="flex h-full items-center">
                       {user._id === loginId ? (
                         <span className="font-medium">You</span>
                       ) : (
                         <span className="font-medium">{user.name}</span>
                       )}
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               ))}

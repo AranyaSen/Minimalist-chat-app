@@ -1,28 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import useUserStore from "@/store/useUserStore";
 import { NavProps } from "@/components/Nav/Nav.types";
 
 const Nav: React.FC<NavProps> = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // STORE VARIABLES
-  const loginName = useUserStore((state) => state.loginName);
-  const loginId = useUserStore((state) => state.loginId);
-  const clearAuth = useUserStore((state) => state.clearAuth);
-
   const token = document.cookie;
   const [dropdown, setDropdown] = useState<boolean>(false);
 
   const handleProfileDropdown = () => {
-    if (token && loginName) {
+    if (token) {
       setDropdown((prev) => !prev);
     }
   };
 
   const handleLogout = () => {
-    clearAuth();
     navigate("/signin");
   };
 
@@ -51,11 +44,11 @@ const Nav: React.FC<NavProps> = () => {
 
           <div className="flex items-center gap-6">
             <div className="relative flex items-center gap-3">
-              {token && loginName ? (
+              {token ? (
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-gray-400">Welcome back,</p>
-                    <p className="text-sm font-bold text-secondary">{loginName}</p>
+                    <p className="text-sm font-bold text-secondary">{'loginName'}</p>
                   </div>
                   <div
                     className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-secondary/30 cursor-pointer hover:border-secondary transition-all"
@@ -63,8 +56,8 @@ const Nav: React.FC<NavProps> = () => {
                   >
                     <img
                       className="w-full h-full object-cover"
-                      src={`${import.meta.env.VITE_BACKEND_URL}/api/user/${loginId}/image`}
-                      alt={loginName}
+                      src={`${import.meta.env.VITE_BACKEND_URL}/api/user/${'loginId'}/image`}
+                      alt={'loginName'}
                     />
                   </div>
                   {dropdown && (

@@ -1,22 +1,15 @@
 import React, { useEffect, useRef, useState, memo } from "react";
-import axios from "axios";
 import Loader from "@/components/Loader/Loader";
 import Chatbox from "@/components/Chatbox/Chatbox";
 import { ChevronDown } from "lucide-react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
-import { useChatSocket } from "@/hooks/useChatSocket";
-import useUserStore from "@/store/useUserStore";
 import { TextingProps, EmojiData } from "@/components/Texting/Texting.types";
 import { Message } from "@/hooks/useChatSocket.types";
+import { getConversation, reactToMessage } from "@/services/messageService";
+import { verifyToken } from "@/services/userService";
 
 const Texting: React.FC<TextingProps> = ({ receiverId }) => {
   const chatSectionRef = useRef<HTMLDivElement>(null);
-
-  /* STORE */
-  const loginId = useUserStore((state) => state.loginId);
-
-  /* SOCKET HOOK */
-  const { messages: socketMessages } = useChatSocket(loginId);
 
   /* STATE */
   const [login, setLogin] = useState<boolean | undefined>(undefined);
@@ -32,57 +25,6 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
     }).format(new Date(time));
   };
 
-  /* FETCH CONVERSATION HISTORY */
-  const fetchMessages = async () => {
-    if (!receiverId || !loginId) return;
-    const payloadData = {
-      senderId: receiverId,
-      receiverId: loginId,
-    };
-
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/messages/conversation`,
-        payloadData
-      );
-
-      if (res.status === 200) {
-        setMessages(res.data);
-        setNoMessages(false);
-      }
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setNoMessages(true);
-      }
-      console.error(err);
-    }
-  };
-
-  /* VERIFY USER */
-  const verifyUser = async () => {
-    try {
-      const cookies = document.cookie.split(";");
-      const jwtToken = cookies.find((token) => token.trim().startsWith("token"));
-
-      if (jwtToken) {
-        const token = jwtToken.split("=")[1];
-
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/verify`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 200) setLogin(true);
-      } else {
-        setLogin(false);
-      }
-    } catch (error: any) {
-      setLogin(false);
-      if (error.response?.status === 403) {
-        console.log(error.response.data.message);
-      }
-    }
-  };
-
   /* MESSAGE OPTION TOGGLE */
   const handleMessageDetailsIndex = (index: number) => {
     setMessageDetailsIndex((prev) => (prev === index ? null : index));
@@ -91,56 +33,13 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
   /* REACT TO MESSAGE */
   const handleMessageReact = async (emoji: EmojiData, id: string) => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, {
-        reaction: emoji.emoji,
-      });
+      await reactToMessage(id, emoji.emoji);
 
       setMessageDetailsIndex(null);
     } catch (error: any) {
       console.error(error.message);
     }
   };
-
-  /* INITIAL DATA FETCH */
-  useEffect(() => {
-    verifyUser();
-    fetchMessages();
-  }, [receiverId, loginId]);
-
-  /* REALTIME SOCKET MESSAGE LISTENER */
-  useEffect(() => {
-    if (!socketMessages || socketMessages.length === 0) return;
-
-    const latestMessage = socketMessages[socketMessages.length - 1];
-
-    const senderIdFromMsg =
-      typeof latestMessage.sender === "string" ? latestMessage.sender : latestMessage.sender?._id;
-
-    const receiverIdFromMsg =
-      typeof latestMessage.receiver === "string"
-        ? latestMessage.receiver
-        : latestMessage.receiver?._id;
-
-    // ensure message belongs to this chat
-    const isCurrentChat =
-      (String(senderIdFromMsg) === String(loginId) &&
-        String(receiverIdFromMsg) === String(receiverId)) ||
-      (String(senderIdFromMsg) === String(receiverId) &&
-        String(receiverIdFromMsg) === String(loginId));
-
-    if (!isCurrentChat) return;
-
-    console.log("New message received via socket:", latestMessage);
-
-    setMessages((prev) => {
-      const exists = prev.find((msg) => msg._id === latestMessage._id);
-      if (exists) return prev;
-
-      return [...prev, latestMessage];
-    });
-
-    setNoMessages(false);
-  }, [socketMessages, receiverId, loginId]);
 
   /* AUTO SCROLL TO LAST MESSAGE */
   useEffect(() => {
@@ -176,11 +75,11 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
                 return (
                   <div
                     key={res._id || index}
-                    className={senderId === loginId ? "flex justify-end" : "flex justify-start"}
+                    className={senderId === 'loginId' ? "flex justify-end" : "flex justify-start"}
                   >
                     <div
                       className={`relative h-fit w-fit max-w-[65%] flex gap-[10px] items-end p-4 wrap-break-word rounded-[20px] ${
-                        senderId === loginId
+                        senderId === 'loginId'
                           ? "text-[20px] bg-secondary text-[#0d1f22]"
                           : "bg-[#4d426d]"
                       }`}
@@ -193,7 +92,7 @@ const Texting: React.FC<TextingProps> = ({ receiverId }) => {
                         </p>
                       </span>
 
-                      {senderId === loginId && (
+                      {senderId === 'loginId' && (
                         <ChevronDown
                           width={14}
                           className="cursor-pointer"

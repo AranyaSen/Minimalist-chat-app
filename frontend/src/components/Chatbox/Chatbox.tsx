@@ -1,14 +1,9 @@
 import React, { useState } from "react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
-import useUserStore from "@/store/useUserStore";
 import { useChatSocket } from "@/hooks/useChatSocket";
 import { ChatboxProps } from "@/components/Chatbox/Chatbox.types";
 
 const Chatbox: React.FC<ChatboxProps> = ({ receiverId }) => {
-  // STORE VARIABLES
-  const loginId = useUserStore((state) => state.loginId);
-
-  const { sendMessage } = useChatSocket(loginId);
 
   //   STATE VARIABLES
   const [userMessage, setUserMessage] = useState<string>("");
@@ -17,11 +12,11 @@ const Chatbox: React.FC<ChatboxProps> = ({ receiverId }) => {
   const handleSendMessage = () => {
     if (!userMessage.trim()) return;
 
-    sendMessage({
-      senderId: loginId,
-      receiverId: receiverId,
-      messageContent: userMessage,
-    });
+    // userMessage({
+    //   senderId: loginId,
+    //   receiverId: receiverId,
+    //   messageContent: userMessage,
+    // });
 
     setUserMessage("");
     setShowEmoji(false);

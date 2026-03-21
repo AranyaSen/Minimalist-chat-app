@@ -18,7 +18,7 @@ const conversationSchema = new mongoose_1.default.Schema({
             },
             role: {
                 type: String,
-                enum: ["member", "admin"],
+                enum: ["member", "groupAdmin"],
                 default: "member",
             },
             joinedAt: {

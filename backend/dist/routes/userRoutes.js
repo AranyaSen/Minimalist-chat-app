@@ -14,6 +14,7 @@ const storage = multer_1.default.memoryStorage();
 const upload = (0, multer_1.default)({ storage });
 router.post("/signup", upload.single("image"), (0, validationMiddleware_1.validate)(userValidator_1.signupSchema), userController_1.signupUser);
 router.post("/signin", (0, validationMiddleware_1.validate)(userValidator_1.signinSchema), userController_1.signinUser);
+router.get("/refresh", userController_1.refreshAccessToken);
 router.get("/verify", authMiddleware_1.default, userController_1.verifyUser);
 router.get("/", userController_1.getAllUsers);
 router.get("/:id/image", userController_1.getUserImage);

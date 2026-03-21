@@ -1,45 +1,38 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import Nav from "@/components/Nav/Nav";
 import { User, Lock, LogIn, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { SignInProps } from "@/pages/SinginPage/SignIn.types";
+import { SignInProps, signInSchema, SignInFormData } from "@/pages/SinginPage/SignIn.types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "@/services/userService";
 
-/**
- * SignIn Component - Handles user login
- */
 const SignIn: React.FC<SignInProps> = () => {
   const navigate = useNavigate();
 
   // STATE VARIABLES
-  const [username, setUsername] = useState<string>("");
-  const [usernameError, setUsernameError] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  /**
-   * handleSignIn - Processes the login request
-   */
-  const handleSignIn = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!username || !password) {
-      setUsernameError(!username);
-      setPasswordError(!password);
-      return toast.error("Please enter proper details");
-    }
+  // REACT HOOK FORM SETUP
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
 
+  const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
-    const signInData = { username, password };
 
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/user/signin`,
-        signInData,
-        { withCredentials: true }
-      );
+      const res = await signIn(data);
 
       if (res.status === 200) {
         toast.success(res.data.message || "Login successful!");
@@ -66,9 +59,7 @@ const SignIn: React.FC<SignInProps> = () => {
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md animate-fade-in">
-          {/* Glassmorphic Card */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            {/* Background Decorative Blobs */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-secondary/5 rounded-full blur-3xl -z-10"></div>
 
@@ -80,34 +71,29 @@ const SignIn: React.FC<SignInProps> = () => {
               <p className="text-gray-400 text-sm">Sign in to your account to continue</p>
             </div>
 
-            <form onSubmit={handleSignIn} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${usernameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.username ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
                   >
                     <User size={18} />
                   </div>
                   <input
                     type="text"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setUsernameError(false);
-                    }}
-                    onBlur={() => (!username ? setUsernameError(true) : setUsernameError(false))}
+                    {...register("username")}
                     className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                      usernameError
+                      errors.username
                         ? "border-red-500/50 focus:ring-red-500/30"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
                     placeholder="your_username"
                   />
                 </div>
-                {usernameError && (
+                {errors.username && (
                   <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    Please enter your username
+                    {errors.username.message}
                   </p>
                 )}
               </div>
@@ -121,20 +107,15 @@ const SignIn: React.FC<SignInProps> = () => {
                 </div>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${passwordError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.password ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
                   >
                     <Lock size={18} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setPasswordError(false);
-                    }}
-                    onBlur={() => (!password ? setPasswordError(true) : setPasswordError(false))}
+                    {...register("password")}
                     className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                      passwordError
+                      errors.password
                         ? "border-red-500/50 focus:ring-red-500/30"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
@@ -148,9 +129,9 @@ const SignIn: React.FC<SignInProps> = () => {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                {passwordError && (
+                {errors.password && (
                   <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    Please enter your password
+                    {errors.password.message}
                   </p>
                 )}
               </div>

@@ -6,10 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateMessageReaction = exports.getConversationMessages = exports.getAllMessages = void 0;
 const Messages_1 = __importDefault(require("@/models/Messages"));
 const asyncHandler_1 = __importDefault(require("@/utils/asyncHandler"));
+const responseHandler_1 = require("@/utils/responseHandler");
 exports.getAllMessages = (0, asyncHandler_1.default)(async (req, res) => {
     const messages = await Messages_1.default.find();
     if (messages.length > 0) {
-        return res.status(200).json(messages);
+        return (0, responseHandler_1.responseHandler)(res, "Messages fetched successfully", 200, messages);
     }
     res.status(404);
     throw new Error("No messages found for all users");
@@ -27,7 +28,7 @@ exports.getConversationMessages = (0, asyncHandler_1.default)(async (req, res) =
                 select: "name username email",
             },
         });
-        res.status(200).json(messages);
+        (0, responseHandler_1.responseHandler)(res, "Conversation messages fetched successfully", 200, messages);
     }
     catch (error) {
         res.status(400);
@@ -52,5 +53,5 @@ exports.updateMessageReaction = (0, asyncHandler_1.default)(async (req, res) => 
     if (io) {
         io.emit("message-reaction", message);
     }
-    res.status(200).json({ message: "reaction updated", content: message });
+    (0, responseHandler_1.responseHandler)(res, "reaction updated", 200, message);
 });

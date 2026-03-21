@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addToGroup = exports.removeFromGroup = exports.renameGroup = exports.createGroupChat = exports.fetchChats = exports.accessChat = void 0;
 const asyncHandler_1 = __importDefault(require("@/utils/asyncHandler"));
+const responseHandler_1 = require("@/utils/responseHandler");
 const Conversations_1 = __importDefault(require("@/models/Conversations"));
 const User_1 = __importDefault(require("@/models/User"));
 // Access or create a direct chat
@@ -29,7 +30,7 @@ exports.accessChat = (0, asyncHandler_1.default)(async (req, res) => {
         select: "name username email",
     });
     if (isChat.length > 0) {
-        res.send(isChat[0]);
+        (0, responseHandler_1.responseHandler)(res, "Chat accessed successfully", 200, isChat[0]);
     }
     else {
         var chatData = {
@@ -41,8 +42,10 @@ exports.accessChat = (0, asyncHandler_1.default)(async (req, res) => {
         };
         try {
             const createdChat = await Conversations_1.default.create(chatData);
-            const FullChat = await Conversations_1.default.findOne({ _id: createdChat._id }).populate("participants.userId", "-password");
-            res.status(200).json(FullChat);
+            const FullChat = await Conversations_1.default.findOne({
+                _id: createdChat._id,
+            }).populate("participants.userId", "-password");
+            (0, responseHandler_1.responseHandler)(res, "Chat created successfully", 200, FullChat);
         }
         catch (error) {
             res.status(400);
@@ -54,7 +57,7 @@ exports.accessChat = (0, asyncHandler_1.default)(async (req, res) => {
 exports.fetchChats = (0, asyncHandler_1.default)(async (req, res) => {
     try {
         Conversations_1.default.find({
-            participants: { $elemMatch: { userId: req.user?.userId } }
+            participants: { $elemMatch: { userId: req.user?.userId } },
         })
             .populate("participants.userId", "-password")
             .populate("lastMessage")
@@ -64,7 +67,7 @@ exports.fetchChats = (0, asyncHandler_1.default)(async (req, res) => {
                 path: "lastMessage.sender",
                 select: "name username email",
             });
-            res.status(200).send(results);
+            (0, responseHandler_1.responseHandler)(res, "Chats fetched successfully", 200, results);
         });
     }
     catch (error) {
@@ -101,9 +104,10 @@ exports.createGroupChat = (0, asyncHandler_1.default)(async (req, res) => {
             participants: participants,
             type: "group",
         });
-        const fullGroupChat = await Conversations_1.default.findOne({ _id: groupChat._id })
-            .populate("participants.userId", "-password");
-        res.status(200).json(fullGroupChat);
+        const fullGroupChat = await Conversations_1.default.findOne({
+            _id: groupChat._id,
+        }).populate("participants.userId", "-password");
+        (0, responseHandler_1.responseHandler)(res, "Group chat created successfully", 200, fullGroupChat);
     }
     catch (error) {
         res.status(400);
@@ -117,14 +121,13 @@ exports.renameGroup = (0, asyncHandler_1.default)(async (req, res) => {
         name: name,
     }, {
         new: true,
-    })
-        .populate("participants.userId", "-password");
+    }).populate("participants.userId", "-password");
     if (!updatedChat) {
         res.status(404);
         throw new Error("Chat Not Found");
     }
     else {
-        res.json(updatedChat);
+        (0, responseHandler_1.responseHandler)(res, "Group renamed successfully", 200, updatedChat);
     }
 });
 // Remove user from a group
@@ -134,30 +137,30 @@ exports.removeFromGroup = (0, asyncHandler_1.default)(async (req, res) => {
         $pull: { participants: { userId: userId } },
     }, {
         new: true,
-    })
-        .populate("participants.userId", "-password");
+    }).populate("participants.userId", "-password");
     if (!removed) {
         res.status(404);
         throw new Error("Chat Not Found");
     }
     else {
-        res.json(removed);
+        (0, responseHandler_1.responseHandler)(res, "User removed from group successfully", 200, removed);
     }
 });
 // Add user to a group
 exports.addToGroup = (0, asyncHandler_1.default)(async (req, res) => {
     const { chatId, userId } = req.body;
     const added = await Conversations_1.default.findByIdAndUpdate(chatId, {
-        $push: { participants: { userId: userId, role: "member", joinedAt: new Date() } },
+        $push: {
+            participants: { userId: userId, role: "member", joinedAt: new Date() },
+        },
     }, {
         new: true,
-    })
-        .populate("participants.userId", "-password");
+    }).populate("participants.userId", "-password");
     if (!added) {
         res.status(404);
         throw new Error("Chat Not Found");
     }
     else {
-        res.json(added);
+        (0, responseHandler_1.responseHandler)(res, "User added to group successfully", 200, added);
     }
 });
