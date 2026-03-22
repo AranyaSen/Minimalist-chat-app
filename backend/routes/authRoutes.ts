@@ -6,6 +6,7 @@ import {
   signinUser,
   refreshAccessToken,
   profile,
+  logoutUser,
 } from "@/controllers/authController";
 import authMiddleware from "@/middlewares/authMiddleware";
 import multer from "multer";
@@ -23,6 +24,7 @@ router.post(
 
 router.post("/signin", validate(signinSchema), signinUser);
 router.post("/refresh", refreshAccessToken);
+router.post("/logout", authMiddleware, logoutUser);
 router.get("/profile", authMiddleware, profile);
 
 export default router;

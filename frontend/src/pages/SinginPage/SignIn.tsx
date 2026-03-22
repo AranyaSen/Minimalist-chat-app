@@ -57,14 +57,14 @@ const SignIn = () => {
     <div className="min-h-screen bg-primary text-white flex flex-col">
       <Nav />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-start justify-center px-4 pt-32 md:pt-32 pb-12">
         <div className="w-full max-w-md animate-fade-in">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-secondary/5 rounded-full blur-3xl -z-10"></div>
 
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary/20 rounded-2xl mb-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-secondary/20 rounded-2xl mb-4">
                 <LogIn className="text-secondary" size={32} />
               </div>
               <h1 className="text-3xl font-bold mb-2 text-white">Welcome Back</h1>
@@ -83,7 +83,7 @@ const SignIn = () => {
                   <input
                     type="text"
                     {...register("username")}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                    className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
                       errors.username
                         ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
@@ -116,7 +116,7 @@ const SignIn = () => {
                   <input
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                    className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-12 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
                       errors.password
                         ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
@@ -147,7 +147,7 @@ const SignIn = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full bg-secondary text-primary font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
+                className={`w-full bg-secondary text-primary font-black py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
                   isLoading ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
@@ -161,7 +161,7 @@ const SignIn = () => {
               </button>
             </form>
 
-            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-gray-400 text-sm">
                 New user?{" "}
                 <Link to="/signup" className="text-secondary font-bold hover:underline">

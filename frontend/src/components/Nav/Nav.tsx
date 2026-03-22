@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { logout } from "@/services/authService/authService";
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -16,13 +17,13 @@ const Nav = () => {
     }
   };
 
-  const handleLogout = () => {
-    // Clear storage and store
+  const handleLogout = async () => {
+    await logout();
     setAccessToken("");
     setUser(null);
     setIsLoggedIn(false);
     setDropdown(false);
-    navigate("/signin");
+    navigate("/");
   };
 
   useEffect(() => {
@@ -84,7 +85,7 @@ const Nav = () => {
                         <p className="text-sm font-bold text-secondary truncate">{user.fullName}</p>
                       </div>
                       <button
-                        className="w-full text-left px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-3 group"
+                        className="cursor-pointer w-full text-left px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-3 group"
                         onClick={handleLogout}
                       >
                         <div className="p-2 rounded-lg bg-error/10 text-error group-hover:bg-error group-hover:text-white transition-all">

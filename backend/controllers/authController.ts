@@ -158,3 +158,14 @@ export const profile = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 });
+
+export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById(req.user?.userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  user.refreshToken = "";
+  await user.save();
+  res.clearCookie("refreshToken");
+  responseHandler(res, "User logged out successfully", 200, {});
+});

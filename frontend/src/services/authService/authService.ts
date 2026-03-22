@@ -19,3 +19,7 @@ export const verifyToken = (): Promise<ApiResponseType<ParticipantUser>> => {
 export const refresh = (): Promise<ApiResponseType<SiginInResponseType>> => {
   return apiClient.post("/api/auth/refresh");
 };
+
+export const logout = (): Promise<ApiResponseType> => {
+  return apiClient.post("/api/auth/logout");
+};
