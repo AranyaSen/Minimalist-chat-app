@@ -1,85 +1,89 @@
 import React, { useState } from "react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
-import useUserStore from "@/store/useUserStore";
-import { useChatSocket } from "@/hooks/useChatSocket";
 import { ChatboxProps } from "@/components/Chatbox/Chatbox.types";
+import { Send, Smile } from "lucide-react";
+import { sendMessage } from "@/services/messageService";
+import { useQueryClient } from "@tanstack/react-query";
 
-const Chatbox: React.FC<ChatboxProps> = ({ receiverId }) => {
-  // STORE VARIABLES
-  const loginId = useUserStore((state) => state.loginId);
-
-  const { sendMessage } = useChatSocket(loginId);
-
-  //   STATE VARIABLES
+const Chatbox: React.FC<ChatboxProps> = ({ chatId, receiverId }) => {
   const [userMessage, setUserMessage] = useState<string>("");
   const [showEmoji, setShowEmoji] = useState<boolean>(false);
+  const [isSending, setIsSending] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleSendMessage = () => {
-    if (!userMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!userMessage.trim() || !chatId || isSending) return;
 
-    sendMessage({
-      senderId: loginId,
-      receiverId: receiverId,
-      messageContent: userMessage,
-    });
-
+    const messageContent = userMessage.trim();
     setUserMessage("");
     setShowEmoji(false);
+    setIsSending(true);
+
+    try {
+      await sendMessage(chatId, messageContent, receiverId);
+      // The controller emits "message-received" via socket, which Texting.tsx
+      // listens for and appends to the cache. We also invalidate to be safe.
+      queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // Restore the message on failure so user can retry
+      setUserMessage(messageContent);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="relative flex items-center px-8 h-[15%] justify-between">
-      <div className="w-full h-full flex items-center relative">
-        <input
-          className="w-[99%] h-[45%] border-none bg-[#f2efea] text-[#0D1F22] outline-1 outline-gray-500 text-[20px] p-0 indent-5 rounded-[20px] focus:transition-all focus:duration-100 focus:ease-out focus:border-none focus:outline-1 focus:outline-secondary"
-          type="text"
-          value={userMessage}
-          onChange={(e) => setUserMessage(e.target.value)}
-          placeholder="Type a message..."
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSendMessage();
-            }
-          }}
-        />
+    <div className="relative w-full">
+      {showEmoji && (
+        <div className="absolute bottom-full right-0 mb-4 z-50 animate-fade-in">
+          <EmojiPicker
+            width={320}
+            height={400}
+            onEmojiClick={(e: EmojiClickData) => {
+              setUserMessage((prev) => prev + e.emoji);
+            }}
+            theme={Theme.DARK}
+            skinTonesDisabled={true}
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 group">
+          <input
+            className="w-full bg-white/5 border border-white/10 rounded-3xl py-4 pl-6 pr-14 text-white placeholder-white/20 focus:outline-none focus:border-secondary transition-all"
+            type="text"
+            value={userMessage}
+            onChange={(e) => setUserMessage(e.target.value)}
+            placeholder="Type a message..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+              }
+            }}
+            disabled={isSending}
+          />
+          <button
+            onClick={() => setShowEmoji((prev) => !prev)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-secondary transition-colors"
+          >
+            <Smile size={24} />
+          </button>
+        </div>
+
         <button
-          onClick={() => setShowEmoji((prev) => !prev)}
-          className="rounded-full border-none w-[35px] h-[35px] absolute right-5 cursor-pointer flex justify-center items-center"
+          onClick={handleSendMessage}
+          disabled={!userMessage.trim() || isSending}
+          className="w-14 h-14 flex items-center justify-center bg-secondary text-primary rounded-2xl hover:bg-orange-400 transition-all shadow-lg shadow-secondary/10 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-95"
         >
-          <img
-            className="w-full"
-            src="https://cdn-icons-png.flaticon.com/512/1023/1023656.png"
-            alt="emoji"
+          <Send
+            size={24}
+            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
           />
         </button>
-        {showEmoji && (
-          <div className="absolute bottom-[100px] w-full">
-            <EmojiPicker
-              width={"100%"}
-              height={"400px"}
-              onEmojiClick={(e: EmojiClickData) => {
-                setUserMessage((prev) => prev + e.emoji);
-              }}
-              theme={Theme.DARK}
-              skinTonesDisabled={true}
-            />
-          </div>
-        )}
       </div>
-      <button
-        onClick={handleSendMessage}
-        className="w-[50px] h-[45%] flex justify-center items-center cursor-pointer right-0 rounded-full border-none"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          height="20px"
-          viewBox="0 -960 960 960"
-          width="20px"
-          className="w-full h-full fill-[#4d426d]"
-        >
-          <path d="M144-192v-576l720 288-720 288Zm72-107 454-181-454-181v109l216 72-216 72v109Zm0 0v-362 362Z" />
-        </svg>
-      </button>
     </div>
   );
 };

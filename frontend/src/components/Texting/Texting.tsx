@@ -1,236 +1,248 @@
 import React, { useEffect, useRef, useState, memo } from "react";
-import axios from "axios";
-import Loader from "@/components/Loader/Loader";
 import Chatbox from "@/components/Chatbox/Chatbox";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MessageSquare, Loader2, ArrowLeft, User as UserIcon } from "lucide-react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
-import { useChatSocket } from "@/hooks/useChatSocket";
-import useUserStore from "@/store/useUserStore";
 import { TextingProps, EmojiData } from "@/components/Texting/Texting.types";
-import { Message } from "@/hooks/useChatSocket.types";
+import { MessageType } from "@/hooks/useChatSocket.types";
+import { reactToMessage } from "@/services/messageService";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useMessagesQuery } from "@/queries/useMessagesQuery";
+import { useChatSocket } from "@/hooks/useChatSocket";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConversationsQuery } from "@/queries/useConversationsQuery";
+import { getReceiverInfo } from "@/utils/chatUtils";
 
-const Texting: React.FC<TextingProps> = ({ receiverId }) => {
+const Texting: React.FC<TextingProps> = ({ chatId, receiverId, onBack }) => {
+  const { user: currentUser } = useAuthStore();
+  const { data: conversationList = [] } = useConversationsQuery();
+
+  const { name: receiverName, image: receiverImage } = getReceiverInfo(
+    chatId,
+    receiverId,
+    currentUser?.id || "",
+    conversationList,
+    [] // We don't have searchedUsers here, but getReceiverInfo handles it
+  );
   const chatSectionRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
-  /* STORE */
-  const loginId = useUserStore((state) => state.loginId);
-
-  /* SOCKET HOOK */
-  const { messages: socketMessages } = useChatSocket(loginId);
-
-  /* STATE */
-  const [login, setLogin] = useState<boolean | undefined>(undefined);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [noMessage, setNoMessages] = useState<boolean>(false);
   const [messageDetailsIndex, setMessageDetailsIndex] = useState<number | null>(null);
 
-  const timeFormatter = (time: string) => {
-    return Intl.DateTimeFormat("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }).format(new Date(time));
-  };
+  // Fetch messages via REST
+  const { data: messages = [], isLoading } = useMessagesQuery(chatId);
 
-  /* FETCH CONVERSATION HISTORY */
-  const fetchMessages = async () => {
-    if (!receiverId || !loginId) return;
-    const payloadData = {
-      senderId: receiverId,
-      receiverId: loginId,
+  // Socket connection
+  const { socket, joinChat, markAsRead } = useChatSocket(currentUser?.id || "");
+
+  // Join the chat room when chatId changes
+  useEffect(() => {
+    if (!chatId) return;
+    joinChat(chatId);
+    markAsRead(chatId);
+  }, [chatId]);
+
+  // Listen for real-time messages
+  useEffect(() => {
+    if (!socket || !chatId) return;
+
+    const onMessageReceived = (newMessage: MessageType) => {
+      // Only add if the message belongs to this chat
+      if (newMessage.chatId === chatId || (newMessage.chatId as any)?._id === chatId) {
+        queryClient.setQueryData(["messages", chatId], (old: MessageType[] = []) => {
+          // Prevent duplicates
+          const exists = old.find((m) => m._id === newMessage._id);
+          if (exists) return old;
+          return [...old, newMessage];
+        });
+        // Mark as read since user is viewing this chat
+        markAsRead(chatId);
+      }
+
+      // Refresh conversation list to update lastMessage
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
     };
 
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/messages/conversation`,
-        payloadData
-      );
+    socket.on("message-received", onMessageReceived);
 
-      if (res.status === 200) {
-        setMessages(res.data);
-        setNoMessages(false);
-      }
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setNoMessages(true);
-      }
-      console.error(err);
+    return () => {
+      socket.off("message-received", onMessageReceived);
+    };
+  }, [socket, chatId, queryClient, markAsRead]);
+
+  const timeFormatter = (time: string) => {
+    try {
+      return Intl.DateTimeFormat("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).format(new Date(time));
+    } catch {
+      return "";
     }
   };
 
-  /* VERIFY USER */
-  const verifyUser = async () => {
-    try {
-      const cookies = document.cookie.split(";");
-      const jwtToken = cookies.find((token) => token.trim().startsWith("token"));
-
-      if (jwtToken) {
-        const token = jwtToken.split("=")[1];
-
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/user/verify`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 200) setLogin(true);
-      } else {
-        setLogin(false);
-      }
-    } catch (error: any) {
-      setLogin(false);
-      if (error.response?.status === 403) {
-        console.log(error.response.data.message);
-      }
-    }
-  };
-
-  /* MESSAGE OPTION TOGGLE */
   const handleMessageDetailsIndex = (index: number) => {
     setMessageDetailsIndex((prev) => (prev === index ? null : index));
   };
 
-  /* REACT TO MESSAGE */
   const handleMessageReact = async (emoji: EmojiData, id: string) => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/messages/react/${id}`, {
-        reaction: emoji.emoji,
-      });
-
+      await reactToMessage(id, emoji.emoji);
       setMessageDetailsIndex(null);
-    } catch (error: any) {
-      console.error(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
     }
   };
 
-  /* INITIAL DATA FETCH */
-  useEffect(() => {
-    verifyUser();
-    fetchMessages();
-  }, [receiverId, loginId]);
-
-  /* REALTIME SOCKET MESSAGE LISTENER */
-  useEffect(() => {
-    if (!socketMessages || socketMessages.length === 0) return;
-
-    const latestMessage = socketMessages[socketMessages.length - 1];
-
-    const senderIdFromMsg =
-      typeof latestMessage.sender === "string" ? latestMessage.sender : latestMessage.sender?._id;
-
-    const receiverIdFromMsg =
-      typeof latestMessage.receiver === "string"
-        ? latestMessage.receiver
-        : latestMessage.receiver?._id;
-
-    // ensure message belongs to this chat
-    const isCurrentChat =
-      (String(senderIdFromMsg) === String(loginId) &&
-        String(receiverIdFromMsg) === String(receiverId)) ||
-      (String(senderIdFromMsg) === String(receiverId) &&
-        String(receiverIdFromMsg) === String(loginId));
-
-    if (!isCurrentChat) return;
-
-    console.log("New message received via socket:", latestMessage);
-
-    setMessages((prev) => {
-      const exists = prev.find((msg) => msg._id === latestMessage._id);
-      if (exists) return prev;
-
-      return [...prev, latestMessage];
-    });
-
-    setNoMessages(false);
-  }, [socketMessages, receiverId, loginId]);
-
-  /* AUTO SCROLL TO LAST MESSAGE */
+  // Auto scroll to last message
   useEffect(() => {
     chatSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (login === undefined) return <Loader />;
-
-  if (!receiverId) {
+  if (!chatId) {
     return (
-      <div className="h-full w-full flex justify-center items-center">
-        <div className="h-full w-full bg-primary rounded-[20px] flex justify-center">
-          <div className="mt-8 text-[22px]">
-            <span>Select a person to chat...</span>
-          </div>
+      <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+        <div className="w-20 h-20 bg-secondary/10 rounded-3xl flex items-center justify-center mb-6">
+          <MessageSquare className="text-secondary" size={40} />
         </div>
+        <h3 className="text-2xl font-bold mb-2">Your Messages</h3>
+        <p className="text-gray-400 max-w-xs">
+          Select a contact from the sidebar to start a new conversation.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full flex justify-center items-center">
-      <div className="h-full w-full bg-primary rounded-[20px]">
-        {noMessage ? (
-          <div className="h-[85%] overflow-y-auto [&::-webkit-scrollbar]:w-[5px]">
-            <div className="flex flex-col gap-[14px] pt-8 px-8">Start chatting...</div>
-          </div>
-        ) : (
-          <div className="h-[85%] overflow-y-auto [&::-webkit-scrollbar]:w-[5px]">
-            <div className="flex flex-col gap-[14px] pt-8 px-8">
-              {messages.map((res, index) => {
-                const senderId = typeof res.sender === "string" ? res.sender : res.sender?._id;
-                return (
-                  <div
-                    key={res._id || index}
-                    className={senderId === loginId ? "flex justify-end" : "flex justify-start"}
-                  >
-                    <div
-                      className={`relative h-fit w-fit max-w-[65%] flex gap-[10px] items-end p-4 wrap-break-word rounded-[20px] ${
-                        senderId === loginId
-                          ? "text-[20px] bg-secondary text-[#0d1f22]"
-                          : "bg-[#4d426d]"
-                      }`}
-                    >
-                      {res.message}
+    <div className="h-full w-full flex flex-col bg-white/5 relative overflow-hidden">
+      {/* Chat Header */}
+      <header className="p-4 md:p-6 border-b border-white/5 bg-white/5 flex items-center justify-between z-30">
+        <div className="flex items-center gap-4">
+          {/* Back Button (Mobile Only) */}
+          <button
+            onClick={onBack}
+            className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-all text-gray-400 hover:text-white"
+          >
+            <ArrowLeft size={20} />
+          </button>
 
-                      <span className="text-[10px] relative min-w-[48px]">
-                        <p className="m-0 p-0 absolute -top-[5px] right-0">
-                          {timeFormatter(res.timeStamp)}
-                        </p>
-                      </span>
-
-                      {senderId === loginId && (
-                        <ChevronDown
-                          width={14}
-                          className="cursor-pointer"
-                          onClick={() => handleMessageDetailsIndex(index)}
-                        />
-                      )}
-
-                      {messageDetailsIndex === index && (
-                        <div className="absolute right-0 -top-[60px]">
-                          <EmojiPicker
-                            allowExpandReactions={false}
-                            onEmojiClick={(emoji: EmojiClickData) =>
-                              handleMessageReact(emoji as any, res._id || "")
-                            }
-                            theme={Theme.DARK}
-                            reactionsDefaultOpen
-                          />
-                        </div>
-                      )}
-
-                      {res.messageReaction && (
-                        <div className="absolute flex justify-center items-center w-[30px] h-[30px] right-0 -bottom-[10px] bg-primary rounded-full">
-                          {res.messageReaction}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div ref={chatSectionRef}></div>
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden border-2 border-secondary/20 shadow-lg">
+              {receiverImage ? (
+                <img
+                  src={receiverImage}
+                  alt={receiverName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-secondary/10 flex items-center justify-center">
+                  <UserIcon size={20} className="text-secondary" />
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm md:text-base leading-none mb-1">
+                {receiverName || "Chat"}
+              </h3>
+              {/* <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                  <span className="text-[10px] md:text-xs text-gray-400 font-medium">Online</span>
+                </div> */}
             </div>
           </div>
-        )}
+        </div>
+      </header>
 
-        <Chatbox receiverId={receiverId} />
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <Loader2 size={32} className="animate-spin text-secondary" />
+          </div>
+        ) : messages?.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            <p className="bg-white/5 px-6 py-2 rounded-full border border-white/5">
+              Start of your conversation
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {messages?.map((msg: MessageType, index: number) => {
+              const senderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id;
+              const isMe = senderId === currentUser?.id;
+
+              return (
+                <div
+                  key={msg._id || index}
+                  className={`flex ${isMe ? "justify-end" : "justify-start"} animate-fade-in`}
+                >
+                  <div
+                    className={`relative group max-w-[75%] md:max-w-[65%] flex flex-col gap-1 p-4 rounded-2xl shadow-sm transition-all ${
+                      isMe
+                        ? "bg-secondary text-primary rounded-tr-none"
+                        : "bg-white/10 text-white rounded-tl-none border border-white/5 shadow-black/20"
+                    }`}
+                  >
+                    <p className="text-sm md:text-base leading-relaxed wrap-break-word">
+                      {msg.content}
+                    </p>
+
+                    <div
+                      className={`flex items-center gap-2 mt-1 ${isMe ? "justify-end" : "justify-start"}`}
+                    >
+                      <span className="text-[10px] font-medium opacity-60">
+                        {timeFormatter(msg.createdAt)}
+                      </span>
+
+                      {isMe && (
+                        <button
+                          onClick={() => handleMessageDetailsIndex(index)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {messageDetailsIndex === index && (
+                      <div
+                        className={`absolute z-20 bottom-full ${isMe ? "right-0" : "left-0"} mb-2 animate-fade-in`}
+                      >
+                        <EmojiPicker
+                          allowExpandReactions={false}
+                          onEmojiClick={(emoji: EmojiClickData) =>
+                            handleMessageReact(emoji as EmojiData, msg._id || "")
+                          }
+                          theme={Theme.DARK}
+                          reactionsDefaultOpen
+                          width={280}
+                          height={350}
+                        />
+                      </div>
+                    )}
+
+                    {msg.messageReaction && msg.messageReaction.length > 0 && (
+                      <div
+                        className={`absolute -bottom-3 ${isMe ? "left-2" : "right-2"} flex items-center justify-center w-7 h-7 bg-primary border border-white/10 rounded-full shadow-lg text-sm`}
+                      >
+                        {msg.messageReaction[0]?.type}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={chatSectionRef}></div>
+          </div>
+        )}
       </div>
+
+      {/* Input Area */}
+      <footer className="p-6 bg-white/5 border-t border-white/5">
+        <Chatbox chatId={chatId} receiverId={receiverId} />
+      </footer>
     </div>
   );
 };

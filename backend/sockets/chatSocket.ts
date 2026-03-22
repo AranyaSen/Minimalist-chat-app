@@ -1,6 +1,5 @@
 import { Server, Socket } from "socket.io";
-import Message from "@/models/Messages";
-import Conversation from "@/models/Conversations";
+import ReadMessage from "@/models/ReadMessage";
 
 const onlineUsers = new Map<string, string>();
 
@@ -8,105 +7,76 @@ const initializeSocket = (io: Server) => {
   io.on("connection", (socket: Socket) => {
     console.log("User connected:", socket.id);
 
-    /* Register user */
+    /* Register user — join their personal room */
     socket.on("join-room", (userId: string) => {
       onlineUsers.set(userId, socket.id);
-      console.log("User joined:", userId);
+      socket.join(userId);
+      console.log("User joined room:", userId);
     });
 
-    /* Send message */
-    socket.on("send-message", async (data: any) => {
-      const { senderId, receiverId, messageContent, chatId } = data;
-
-      try {
-        let conversationId = chatId;
-
-        // If no chatId, it's a direct message, find or create conversation
-        if (!conversationId && receiverId) {
-          let conversation = await Conversation.findOne({
-            type: "direct",
-            $and: [
-              { participants: { $elemMatch: { userId: senderId } } },
-              { participants: { $elemMatch: { userId: receiverId } } },
-            ],
-          });
-
-          if (!conversation) {
-            conversation = await Conversation.create({
-              type: "direct",
-              participants: [
-                { userId: senderId, role: "member" },
-                { userId: receiverId, role: "member" },
-              ],
-            });
-          }
-          conversationId = conversation._id;
-        }
-
-        const newMessage = new Message({
-          senderId: senderId,
-          receiverId: receiverId, // Keep for backward compatibility
-          chatId: conversationId,
-          content: messageContent,
-        });
-
-        await newMessage.save();
-
-        // Update last message in conversation
-        await Conversation.findByIdAndUpdate(conversationId, {
-          lastMessage: newMessage._id,
-        });
-
-        await newMessage.populate("senderId", "username");
-        await newMessage.populate({
-          path: "chatId",
-          populate: {
-            path: "participants.userId",
-            select: "username email",
-          },
-        });
-
-        // Emit to all users in the conversation
-        const conversation = await Conversation.findById(conversationId);
-        if (conversation) {
-          conversation.participants.forEach((p: any) => {
-            const userSocket = onlineUsers.get(p.userId.toString());
-            if (userSocket) {
-              io.to(userSocket).emit("receive-message", newMessage);
-            }
-          });
-        }
-      } catch (err) {
-        console.error("Send message error:", err);
-      }
+    /* Join a specific chat room (called when user opens a conversation) */
+    socket.on("join-chat", (chatId: string) => {
+      socket.join(chatId);
+      console.log(`Socket ${socket.id} joined chat: ${chatId}`);
     });
 
-    /* Message reaction */
+    /* Mark messages as read */
     socket.on(
-      "message-reaction",
+      "mark-read",
       async ({
-        messageId,
-        reaction,
+        chatId,
+        userId,
       }: {
-        messageId: string;
-        reaction: string;
+        chatId: string;
+        userId: string;
       }) => {
         try {
-          const message = await Message.findByIdAndUpdate(
-            messageId,
-            { messageReaction: reaction },
-            { new: true }
-          )
-            .populate("sender", "username")
-            .populate("receiver", "username");
+          // Update the lastReadMessageId for this participant in the conversation
+          // and create ReadMessage entries for unread messages
+          const { default: Message } = await import("@/models/Messages");
+          const { default: Conversation } = await import(
+            "@/models/Conversations"
+          );
 
-          io.emit("reaction-updated", message);
+          // Get the latest message in this chat
+          const latestMessage = await Message.findOne({ chatId })
+            .sort({ createdAt: -1 })
+            .select("_id");
+
+          if (!latestMessage) return;
+
+          // Upsert read receipt for the latest message
+          await ReadMessage.findOneAndUpdate(
+            { chatId, userId },
+            {
+              messageId: latestMessage._id,
+              chatId,
+              userId,
+              readAt: new Date(),
+            },
+            { upsert: true, new: true }
+          );
+
+          // Update participant's lastReadMessageId in the conversation
+          await Conversation.updateOne(
+            { _id: chatId, "participants.user": userId },
+            { $set: { "participants.$.lastReadMessageId": latestMessage._id } }
+          );
+
+          // Broadcast to chat room so other users see read status
+          socket.to(chatId).emit("messages-read", {
+            chatId,
+            userId,
+            messageId: latestMessage._id.toString(),
+            readAt: new Date().toISOString(),
+          });
         } catch (err) {
-          console.error("Reaction error:", err);
+          console.error("Mark read error:", err);
         }
       }
     );
 
+    /* Disconnect */
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);
 

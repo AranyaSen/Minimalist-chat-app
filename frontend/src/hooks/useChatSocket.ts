@@ -1,85 +1,70 @@
-import { useEffect, useState } from "react";
-import io from "socket.io-client";
-import { Message, SocketPayload, ReactionPayload } from "@/hooks/useChatSocket.types";
+import { useEffect, useRef } from "react";
+import io, { Socket } from "socket.io-client";
 
 const URL = (import.meta.env.VITE_BACKEND_URL as string) || "";
 
-export const socket = io(URL, {
-  autoConnect: false,
-});
+let globalSocketInstance: Socket | null = null;
+
+const getSocket = (): Socket => {
+  if (!globalSocketInstance) {
+    globalSocketInstance = io(URL, { autoConnect: false });
+  }
+  return globalSocketInstance;
+};
 
 export const useChatSocket = (userId: string) => {
-  const [isConnected, setIsConnected] = useState<boolean>(socket.connected);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket>(getSocket());
 
   useEffect(() => {
     if (!userId) return;
 
+    const s = socketRef.current;
+
+    if (!s.connected) {
+      s.connect();
+    }
+
     function onConnect() {
-      setIsConnected(true);
       console.log("✅ Connected to Socket.IO");
-      socket.emit("register", userId);
+      s.emit("join-room", userId);
     }
 
     function onDisconnect() {
-      setIsConnected(false);
       console.log("❌ Disconnected from Socket.IO");
     }
 
-    function onConnectError(err: Error) {
-      console.error("⚠️ Connection Error:", err.message);
-      setError(err.message);
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
+
+    // If already connected, emit join-room immediately
+    if (s.connected) {
+      s.emit("join-room", userId);
     }
-
-    function onPrivateMessage(msg: Message) {
-      console.log("💬 New Message received:", msg);
-      setMessages((prev) => {
-        // Prevent duplicate messages
-        const exists = prev.find((m) => m._id === msg._id);
-        if (exists) return prev;
-        return [...prev, msg];
-      });
-    }
-
-    function onReactionUpdate({ messageId, reaction }: ReactionPayload) {
-      setMessages((prev) =>
-        prev.map((msg) => (msg._id === messageId ? { ...msg, messageReaction: reaction } : msg))
-      );
-    }
-
-    // Connect manually
-    socket.connect();
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("connect_error", onConnectError);
-    socket.on("private_message", onPrivateMessage);
-    socket.on("reaction_update", onReactionUpdate);
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("connect_error", onConnectError);
-      socket.off("private_message", onPrivateMessage);
-      socket.off("reaction_update", onReactionUpdate);
-      socket.disconnect();
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.disconnect();
     };
   }, [userId]);
 
-  const sendMessage = (payload: SocketPayload) => {
-    if (socket.connected) {
-      socket.emit("private_message", payload);
-    } else {
-      console.warn("Socket not connected. Cannot send message.");
+  const joinChat = (chatId: string) => {
+    const s = socketRef.current;
+    if (s.connected) {
+      s.emit("join-chat", chatId);
     }
   };
 
-  const sendReaction = (payload: ReactionPayload) => {
-    if (socket.connected) {
-      socket.emit("react_message", payload);
+  const markAsRead = (chatId: string) => {
+    const s = socketRef.current;
+    if (s.connected) {
+      s.emit("mark-read", { chatId, userId });
     }
   };
 
-  return { isConnected, messages, error, sendMessage, sendReaction };
+  return {
+    socket: socketRef.current,
+    joinChat,
+    markAsRead,
+  };
 };

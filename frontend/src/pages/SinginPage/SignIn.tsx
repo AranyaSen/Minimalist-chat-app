@@ -1,74 +1,53 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
-import useUserStore from "@/store/useUserStore";
 import Nav from "@/components/Nav/Nav";
 import { User, Lock, LogIn, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { jwtDecode } from "jwt-decode";
-import { SignInProps } from "@/pages/SinginPage/SignIn.types";
-import { DecodedToken } from "@/store/useUserStore.types";
+import { signInSchema, SignInFormData } from "@/pages/SinginPage/SignIn.types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "@/services/authService/authService";
+import { handleError } from "@/utils/errorHandler";
+import { useAuthStore } from "@/store/useAuthStore";
 
-/**
- * SignIn Component - Handles user login
- */
-const SignIn: React.FC<SignInProps> = () => {
+const SignIn = () => {
   const navigate = useNavigate();
 
-  // STORE VARIABLES
-  const setLoginName = useUserStore((state) => state.setLoginName);
-  const setLoginId = useUserStore((state) => state.setLoginId);
-
-  // STATE VARIABLES
-  const [username, setUsername] = useState<string>("");
-  const [usernameError, setUsernameError] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<boolean>(false);
+  // State variable declarations
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  /**
-   * handleSignIn - Processes the login request
-   */
-  const handleSignIn = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!username || !password) {
-      setUsernameError(!username);
-      setPasswordError(!password);
-      return toast.error("Please enter proper details");
-    }
+  const { setUser, setIsLoggedIn, setAccessToken } = useAuthStore();
 
+  // React hook form setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  // Form submission handler
+  const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
-    const signInData = { username, password };
 
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/user/signin`,
-        signInData,
-        { withCredentials: true }
-      );
-
-      if (res.status === 200) {
-        toast.success(res.data.message || "Login successful!");
-
-        const decodedToken = jwtDecode<DecodedToken & { username: string; userId: string }>(
-          res.data.token
-        );
-        // Map original field names from token if they differ
-        setLoginName(decodedToken.username || (decodedToken as any).name);
-        setLoginId(decodedToken.userId || (decodedToken as any).id);
-
-        // Store token in cookies
-        document.cookie = `token=${res.data.token}; Path=/; Max-Age=1200`;
-
-        navigate("/users");
+      const res = await signIn(data);
+      if (res.success) {
+        setUser(res.data?.user);
+        setAccessToken(res.data?.accessToken);
+        setIsLoggedIn(true);
+        toast.success(res?.message);
+        navigate("/chat");
       }
-    } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        toast.error(err.response.data.message);
-      } else {
-        toast.error("Login failed");
-      }
+    } catch (err) {
+      const errorMessage = handleError(err);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -78,78 +57,68 @@ const SignIn: React.FC<SignInProps> = () => {
     <div className="min-h-screen bg-primary text-white flex flex-col">
       <Nav />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-start justify-center px-4 pt-32 md:pt-32 pb-12">
         <div className="w-full max-w-md animate-fade-in">
-          {/* Glassmorphic Card */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            {/* Background Decorative Blobs */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
             <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-secondary/5 rounded-full blur-3xl -z-10"></div>
 
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary/20 rounded-2xl mb-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-secondary/20 rounded-2xl mb-4">
                 <LogIn className="text-secondary" size={32} />
               </div>
               <h1 className="text-3xl font-bold mb-2 text-white">Welcome Back</h1>
               <p className="text-gray-400 text-sm">Sign in to your account to continue</p>
             </div>
 
-            <form onSubmit={handleSignIn} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${usernameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.username ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                   >
                     <User size={18} />
                   </div>
                   <input
                     type="text"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setUsernameError(false);
-                    }}
-                    onBlur={() => (!username ? setUsernameError(true) : setUsernameError(false))}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                      usernameError
-                        ? "border-red-500/50 focus:ring-red-500/30"
+                    {...register("username")}
+                    className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                      errors.username
+                        ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
                     placeholder="your_username"
                   />
                 </div>
-                {usernameError && (
-                  <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    Please enter your username
-                  </p>
+                {errors.username && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                    <p className="text-[11px] font-black text-white drop-shadow-sm">
+                      {errors.username.message}
+                    </p>
+                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
                   <label className="text-sm font-medium text-gray-300">Password</label>
-                  <a href="#" className="text-xs text-secondary hover:underline transition-all">
+                  {/* <a href="#" className="text-xs text-secondary hover:underline transition-all">
                     Forgot password?
-                  </a>
+                  </a> */}
                 </div>
                 <div className="relative group">
                   <div
-                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${passwordError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                    className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.password ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                   >
                     <Lock size={18} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setPasswordError(false);
-                    }}
-                    onBlur={() => (!password ? setPasswordError(true) : setPasswordError(false))}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                      passwordError
-                        ? "border-red-500/50 focus:ring-red-500/30"
+                    {...register("password")}
+                    className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-12 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                      errors.password
+                        ? "border-error/50 focus:ring-error/20"
                         : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                     }`}
                     placeholder="••••••••"
@@ -159,20 +128,26 @@ const SignIn: React.FC<SignInProps> = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-secondary transition-colors"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? (
+                      <EyeOff size={18} color="var(--color-secondary)" />
+                    ) : (
+                      <Eye size={18} color="var(--color-secondary)" />
+                    )}
                   </button>
                 </div>
-                {passwordError && (
-                  <p className="text-xs text-red-400 mt-1 ml-1 animate-pulse">
-                    Please enter your password
-                  </p>
+                {errors.password && (
+                  <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                    <p className="text-[11px] font-black text-white drop-shadow-sm">
+                      {errors.password.message}
+                    </p>
+                  </div>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full bg-secondary text-primary font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
+                className={`w-full bg-secondary text-primary font-black py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
                   isLoading ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
@@ -186,7 +161,7 @@ const SignIn: React.FC<SignInProps> = () => {
               </button>
             </form>
 
-            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-gray-400 text-sm">
                 New user?{" "}
                 <Link to="/signup" className="text-secondary font-bold hover:underline">

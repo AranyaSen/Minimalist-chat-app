@@ -1,33 +1,39 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import Nav from "@/components/Nav/Nav";
 import { User, Mail, Lock, UserPlus, ArrowRight, Camera, Eye, EyeOff } from "lucide-react";
+import { signupSchema, SignupFormData } from "@/pages/SignupPage/Signup.types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signUp } from "@/services/authService/authService";
+import { handleError } from "@/utils/errorHandler";
 
-/**
- * Signup Component - Handles user registration
- */
 const Signup: React.FC = () => {
   const navigate = useNavigate();
 
-  // STATE VARIABLES
-  const [name, setName] = useState<string>("");
-  const [nameError, setNameError] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>("");
-  const [usernameError, setUsernameError] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>("");
-  const [emailError, setEmailError] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<boolean>(false);
+  // State variable declarations
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [userImage, setUserImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  /**
-   * handleImageUpload - Handles the profile picture selection
-   */
+  // REACT HOOK FORM SETUP
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      fullName: "",
+      username: "",
+      email: "",
+      password: "",
+    },
+  });
+
+  // Image upload handler
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -36,39 +42,25 @@ const Signup: React.FC = () => {
     }
   };
 
-  /**
-   * handleSignup - Processes the registration request
-   */
-  const handleSignup = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!name || !username || !email || !password) {
-      setNameError(!name);
-      setUsernameError(!username);
-      setEmailError(!email);
-      setPasswordError(!password);
-      return toast.error("Please enter proper details");
-    }
-
+  // Form submission handler
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("username", username);
-    formData.append("email", email);
-    formData.append("password", password);
+    formData.append("fullName", data.fullName);
+    formData.append("username", data.username);
+    formData.append("email", data.email);
+    formData.append("password", data.password);
     if (userImage) formData.append("image", userImage);
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/signup`, formData);
-      if (res.status === 201) {
-        toast.success("Account created successfully!");
+      const res = await signUp(formData);
+      if (res.success) {
+        toast.success(res?.message);
         navigate("/signin");
       }
-    } catch (err: any) {
-      if (err.response && err.response.status === 409) {
-        toast.error(err.response.data.message);
-      } else {
-        toast.error("Registration failed");
-      }
+    } catch (err) {
+      const errorMessage = handleError(err);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -78,52 +70,49 @@ const Signup: React.FC = () => {
     <div className="min-h-screen bg-primary text-white flex flex-col">
       <Nav />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12 md:py-24">
+      <div className="flex-1 flex items-start justify-center px-4 pt-32 md:pt-32 pb-12">
         <div className="w-full max-w-2xl animate-fade-in">
-          {/* Glassmorphic Card */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            {/* Background Decorative Blobs */}
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 rounded-full blur-3xl -z-10"></div>
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -z-10"></div>
 
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary/20 rounded-2xl mb-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-secondary/20 rounded-2xl mb-4">
                 <UserPlus className="text-secondary" size={32} />
               </div>
               <h1 className="text-3xl font-bold mb-2">Create Account</h1>
               <p className="text-gray-400 text-sm">Join the minimalist chat community</p>
             </div>
 
-            <form onSubmit={handleSignup} className="space-y-8">
-              <div className="flex flex-col md:flex-row gap-10">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="flex flex-col md:flex-row gap-6 md:gap-10">
                 {/* Left side: Inputs */}
-                <div className="flex-[1.5] space-y-6">
+                <div className="flex-[1.5] space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-300 ml-1">Full Name</label>
                     <div className="relative group">
                       <div
-                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${nameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.fullName ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                       >
                         <User size={18} />
                       </div>
                       <input
                         type="text"
-                        value={name}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          setNameError(false);
-                        }}
-                        onBlur={() => (!name ? setNameError(true) : setNameError(false))}
-                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                          nameError
-                            ? "border-red-500/50 focus:ring-red-500/30"
+                        {...register("fullName")}
+                        className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          errors.fullName
+                            ? "border-error/50 focus:ring-error/20"
                             : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                         }`}
-                        placeholder="John Doe"
+                        placeholder="Full Name"
                       />
                     </div>
-                    {nameError && (
-                      <p className="text-[10px] text-red-400 mt-1 ml-1">Please enter your name</p>
+                    {errors.fullName && (
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                        <p className="text-[11px] font-black text-white drop-shadow-sm">
+                          {errors.fullName.message}
+                        </p>
+                      </div>
                     )}
                   </div>
 
@@ -131,32 +120,27 @@ const Signup: React.FC = () => {
                     <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                     <div className="relative group">
                       <div
-                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${usernameError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.username ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                       >
                         <User size={18} />
                       </div>
                       <input
                         type="text"
-                        value={username}
-                        onChange={(e) => {
-                          setUsername(e.target.value);
-                          setUsernameError(false);
-                        }}
-                        onBlur={() =>
-                          !username ? setUsernameError(true) : setUsernameError(false)
-                        }
-                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                          usernameError
-                            ? "border-red-500/50 focus:ring-red-500/30"
+                        {...register("username")}
+                        className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          errors.username
+                            ? "border-error/50 focus:ring-error/20"
                             : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                         }`}
-                        placeholder="johndoe_99"
+                        placeholder="username"
                       />
                     </div>
-                    {usernameError && (
-                      <p className="text-[10px] text-red-400 mt-1 ml-1">
-                        Please enter your username
-                      </p>
+                    {errors.username && (
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                        <p className="text-[11px] font-black text-white drop-shadow-sm">
+                          {errors.username.message}
+                        </p>
+                      </div>
                     )}
                   </div>
 
@@ -164,28 +148,27 @@ const Signup: React.FC = () => {
                     <label className="text-sm font-medium text-gray-300 ml-1">Email Address</label>
                     <div className="relative group">
                       <div
-                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${emailError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.email ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                       >
                         <Mail size={18} />
                       </div>
                       <input
                         type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setEmailError(false);
-                        }}
-                        onBlur={() => (!email ? setEmailError(true) : setEmailError(false))}
-                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                          emailError
-                            ? "border-red-500/50 focus:ring-red-500/30"
+                        {...register("email")}
+                        className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-4 text-white placeholder-secondary/40 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          errors.email
+                            ? "border-error/50 focus:ring-error/20"
                             : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                         }`}
-                        placeholder="john@example.com"
+                        placeholder="user@email.com"
                       />
                     </div>
-                    {emailError && (
-                      <p className="text-[10px] text-red-400 mt-1 ml-1">Please enter your email</p>
+                    {errors.email && (
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                        <p className="text-[11px] font-black text-white drop-shadow-sm">
+                          {errors.email.message}
+                        </p>
+                      </div>
                     )}
                   </div>
 
@@ -193,23 +176,16 @@ const Signup: React.FC = () => {
                     <label className="text-sm font-medium text-gray-300 ml-1">Password</label>
                     <div className="relative group">
                       <div
-                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${passwordError ? "text-red-400" : "text-gray-500 group-focus-within:text-secondary"}`}
+                        className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${errors.password ? "text-error" : "text-white/30 group-focus-within:text-secondary"}`}
                       >
                         <Lock size={18} />
                       </div>
                       <input
                         type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setPasswordError(false);
-                        }}
-                        onBlur={() =>
-                          !password ? setPasswordError(true) : setPasswordError(false)
-                        }
-                        className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-12 text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all outline-none ${
-                          passwordError
-                            ? "border-red-500/50 focus:ring-red-500/30"
+                        {...register("password")}
+                        className={`w-full bg-white/5 border rounded-2xl py-3 pl-12 pr-12 text-white placeholder-white/30 focus:outline-none focus:ring-1 transition-all outline-none ${
+                          errors.password
+                            ? "border-error/50 focus:ring-error/20"
                             : "border-white/10 focus:border-secondary focus:ring-secondary/30"
                         }`}
                         placeholder="••••••••"
@@ -222,10 +198,12 @@ const Signup: React.FC = () => {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
-                    {passwordError && (
-                      <p className="text-[10px] text-red-400 mt-1 ml-1">
-                        Please enter your password
-                      </p>
+                    {errors.password && (
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-error/20 border border-error/40 rounded-xl animate-shake shadow-[0_0_15px_rgba(255,92,141,0.2)]">
+                        <p className="text-[11px] font-black text-white drop-shadow-sm">
+                          {errors.password.message}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -271,7 +249,7 @@ const Signup: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full bg-secondary text-primary font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
+                className={`w-full bg-secondary text-primary font-black py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-400 shadow-lg shadow-secondary/20 transform active:scale-95 transition-all duration-300 ${
                   isLoading ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
@@ -285,7 +263,7 @@ const Signup: React.FC = () => {
               </button>
             </form>
 
-            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-gray-400 text-sm">
                 Already a user?{" "}
                 <Link to="/signin" className="text-secondary font-bold hover:underline">

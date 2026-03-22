@@ -2,7 +2,7 @@ import { Request } from "express";
 import { Document } from "mongoose";
 
 export type UserType = Document & {
-  name: string;
+  fullName: string;
   username: string;
   email: string;
   password: string;
@@ -13,13 +13,6 @@ export type UserType = Document & {
   };
   refreshToken?: string;
 };
-
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    username: string;
-  };
-}
 
 declare global {
   namespace Express {

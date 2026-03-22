@@ -1,29 +1,29 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import useUserStore from "@/store/useUserStore";
-import { NavProps } from "@/components/Nav/Nav.types";
+import { LogOut, User as UserIcon } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
+import { logout } from "@/services/authService/authService";
 
-const Nav: React.FC<NavProps> = () => {
+const Nav = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // STORE VARIABLES
-  const loginName = useUserStore((state) => state.loginName);
-  const loginId = useUserStore((state) => state.loginId);
-  const clearAuth = useUserStore((state) => state.clearAuth);
-
-  const token = document.cookie;
+  const { isLoggedIn, user, setIsLoggedIn, setUser, setAccessToken } = useAuthStore();
   const [dropdown, setDropdown] = useState<boolean>(false);
 
   const handleProfileDropdown = () => {
-    if (token && loginName) {
-      setDropdown((prev) => !prev);
+    if (isLoggedIn) {
+      setDropdown((prev: boolean) => !prev);
     }
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    navigate("/signin");
+  const handleLogout = async () => {
+    await logout();
+    setAccessToken("");
+    setUser(null);
+    setIsLoggedIn(false);
+    setDropdown(false);
+    navigate("/");
   };
 
   useEffect(() => {
@@ -51,31 +51,46 @@ const Nav: React.FC<NavProps> = () => {
 
           <div className="flex items-center gap-6">
             <div className="relative flex items-center gap-3">
-              {token && loginName ? (
+              {isLoggedIn && user ? (
                 <div className="flex items-center gap-4">
                   <div className="hidden sm:block text-right">
                     <p className="text-xs text-gray-400">Welcome back,</p>
-                    <p className="text-sm font-bold text-secondary">{loginName}</p>
+                    <p className="text-sm font-bold text-secondary truncate max-w-[120px]">
+                      {user.fullName}
+                    </p>
                   </div>
                   <div
-                    className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-secondary/30 cursor-pointer hover:border-secondary transition-all"
+                    className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-secondary/30 cursor-pointer hover:border-secondary transition-all shadow-lg hover:shadow-secondary/20"
                     onClick={handleProfileDropdown}
                   >
-                    <img
-                      className="w-full h-full object-cover"
-                      src={`${import.meta.env.VITE_BACKEND_URL}/api/user/${loginId}/image`}
-                      alt={loginName}
-                    />
+                    {user?.image && user.image.length > 0 ? (
+                      <img
+                        className="w-full h-full object-cover"
+                        src={user.image}
+                        alt={user.fullName}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-secondary/10 flex items-center justify-center">
+                        <UserIcon className="text-secondary" size={24} />
+                      </div>
+                    )}
                   </div>
                   {dropdown && (
                     <div
                       ref={dropdownRef}
-                      className="absolute top-[60px] right-0 w-48 bg-primary/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 animate-fade-in"
+                      className="absolute top-[60px] right-0 w-56 bg-primary/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-2 animate-fade-in z-50 overflow-hidden"
                     >
+                      <div className="px-4 py-3 border-b border-white/5 mb-1 sm:hidden">
+                        <p className="text-xs text-gray-400">Welcome,</p>
+                        <p className="text-sm font-bold text-secondary truncate">{user.fullName}</p>
+                      </div>
                       <button
-                        className="w-full text-left px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                        className="cursor-pointer w-full text-left px-4 py-3 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-3 group"
                         onClick={handleLogout}
                       >
+                        <div className="p-2 rounded-lg bg-error/10 text-error group-hover:bg-error group-hover:text-white transition-all">
+                          <LogOut size={16} />
+                        </div>
                         Sign Out
                       </button>
                     </div>
@@ -91,7 +106,7 @@ const Nav: React.FC<NavProps> = () => {
                   </Link>
                   <Link
                     to="/signup"
-                    className="px-5 py-2 text-sm font-bold bg-secondary text-primary rounded-xl hover:bg-orange-400 transition-all transform hover:scale-105"
+                    className="px-5 py-2 text-sm font-bold bg-secondary text-primary rounded-xl hover:bg-orange-400 transition-all transform hover:scale-105 shadow-lg shadow-secondary/10"
                   >
                     Join Now
                   </Link>
