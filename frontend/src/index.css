@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@import "react-toastify/dist/ReactToastify.css";
+
+@theme {
+  --color-primary: #5c4f82;
+  --color-primary-hover: #6d5ba3;
+  --color-secondary: #efa985;
+  --color-error: #ff5c8d;
+
+  --font-mono: "Roboto Mono", monospace;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #4d426d;
+    color: whitesmoke;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+}
