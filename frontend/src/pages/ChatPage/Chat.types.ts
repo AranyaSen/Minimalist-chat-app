@@ -3,13 +3,7 @@ export interface ParticipantUser {
   fullName: string;
   username: string;
   email: string;
-  image?: {
-    data: {
-      type: string;
-      data: number[];
-    };
-    contentType: string;
-  };
+  image?: string;
 }
 
 export interface Participant {

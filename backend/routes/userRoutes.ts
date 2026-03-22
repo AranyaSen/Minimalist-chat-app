@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get("/", authMiddleware, getAllUsers);
 router.get("/search", authMiddleware, searchUsers);
-router.get("/:id/image", authMiddleware, getUserImage);
+router.get("/:id/image", getUserImage);
 router.delete("/user/:id", authMiddleware, deleteUser);
 
 export default router;

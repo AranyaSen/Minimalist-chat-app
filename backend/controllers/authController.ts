@@ -41,9 +41,10 @@ export const signupUser = asyncHandler(async (req: Request, res: Response) => {
   responseHandler(res, "User Created Successfully", 201, {
     user: {
       id: newUser._id,
-      name: newUser.fullName,
+      fullName: newUser.fullName,
       username: newUser.username,
       email: newUser.email,
+      image: newUser.image?.data ? `/api/user/${newUser._id}/image` : null,
     },
   });
 });
@@ -88,7 +89,7 @@ export const signinUser = asyncHandler(async (req: Request, res: Response) => {
       fullName: user.fullName,
       username: user.username,
       email: user.email,
-      image: user?.image,
+      image: user.image?.data ? `/api/user/${user._id}/image` : null,
     },
     accessToken,
   });
@@ -130,7 +131,7 @@ export const refreshAccessToken = asyncHandler(
         fullName: user.fullName,
         username: user.username,
         email: user.email,
-        image: user?.image,
+        image: user.image?.data ? `/api/user/${user._id}/image` : null,
       },
     });
   }
@@ -154,7 +155,7 @@ export const profile = asyncHandler(async (req: Request, res: Response) => {
       fullName: user.fullName,
       username: user.username,
       email: user.email,
-      image: user?.image,
+      image: user.image?.data ? `/api/user/${user._id}/image` : null,
     },
   });
 });

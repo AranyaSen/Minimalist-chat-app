@@ -37,6 +37,10 @@ const Signup: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 500 * 1024) {
+        toast.error("Image size must be less than 500KB");
+        return;
+      }
       setUserImage(file);
       setPreviewImage(URL.createObjectURL(file));
     }

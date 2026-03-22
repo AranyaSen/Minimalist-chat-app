@@ -40,7 +40,21 @@ export const fetchChats = asyncHandler<AuthRequest>(async (req, res) => {
     select: "fullName username email",
   })) as unknown as ConversationPopulatedType[];
 
-  responseHandler(res, "Chats fetched successfully", 200, populatedResults);
+  const formattedResults = populatedResults.map((chat: any) => {
+    const chatObj = chat.toObject ? chat.toObject() : chat;
+    return {
+      ...chatObj,
+      participants: chatObj.participants.map((p: any) => ({
+        ...p,
+        user: {
+          ...p.user,
+          image: p.user?.image?.data ? `/api/user/${p.user._id}/image` : null,
+        },
+      })),
+    };
+  });
+
+  responseHandler(res, "Chats fetched successfully", 200, formattedResults);
 });
 
 // Access or create a direct chat
@@ -66,12 +80,18 @@ export const initiateDirectChat = asyncHandler<AuthRequest>(
       .populate("lastMessage");
 
     if (conversationExists) {
-      responseHandler(
-        res,
-        "Chat accessed successfully",
-        200,
-        conversationExists
-      );
+      const chatObj = conversationExists.toObject();
+      const formattedChat = {
+        ...chatObj,
+        participants: chatObj.participants.map((p: any) => ({
+          ...p,
+          user: {
+            ...p.user,
+            image: p.user?.image?.data ? `/api/user/${p.user._id}/image` : null,
+          },
+        })),
+      };
+      responseHandler(res, "Chat accessed successfully", 200, formattedChat);
     } else {
       const chatData = {
         type: "direct",
@@ -85,7 +105,23 @@ export const initiateDirectChat = asyncHandler<AuthRequest>(
       const FullChat = await Conversation.findOne({
         _id: createdChat._id,
       }).populate("participants.user", "-password -refreshToken");
-      responseHandler(res, "Chat created successfully", 200, FullChat);
+
+      if (FullChat) {
+        const chatObj = FullChat.toObject();
+        const formattedChat = {
+          ...chatObj,
+          participants: chatObj.participants.map((p: any) => ({
+            ...p,
+            user: {
+              ...p.user,
+              image: p.user?.image?.data
+                ? `/api/user/${p.user._id}/image`
+                : null,
+            },
+          })),
+        };
+        responseHandler(res, "Chat created successfully", 200, formattedChat);
+      }
     }
   }
 );
