@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, memo } from "react";
 import Chatbox from "@/components/Chatbox/Chatbox";
-import { ChevronDown, MessageSquare, Loader2 } from "lucide-react";
+import { ChevronDown, MessageSquare, Loader2, ArrowLeft, User as UserIcon } from "lucide-react";
 import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import { TextingProps, EmojiData } from "@/components/Texting/Texting.types";
 import { MessageType } from "@/hooks/useChatSocket.types";
@@ -9,9 +9,20 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useMessagesQuery } from "@/queries/useMessagesQuery";
 import { useChatSocket } from "@/hooks/useChatSocket";
 import { useQueryClient } from "@tanstack/react-query";
+import { useConversationsQuery } from "@/queries/useConversationsQuery";
+import { getReceiverInfo } from "@/utils/chatUtils";
 
-const Texting: React.FC<TextingProps> = ({ chatId, receiverId }) => {
+const Texting: React.FC<TextingProps> = ({ chatId, receiverId, onBack }) => {
   const { user: currentUser } = useAuthStore();
+  const { data: conversationList = [] } = useConversationsQuery();
+
+  const { name: receiverName, image: receiverImage } = getReceiverInfo(
+    chatId,
+    receiverId,
+    currentUser?.id || "",
+    conversationList,
+    [] // We don't have searchedUsers here, but getReceiverInfo handles it
+  );
   const chatSectionRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -106,6 +117,44 @@ const Texting: React.FC<TextingProps> = ({ chatId, receiverId }) => {
 
   return (
     <div className="h-full w-full flex flex-col bg-white/5 relative overflow-hidden">
+      {/* Chat Header */}
+      <header className="p-4 md:p-6 border-b border-white/5 bg-white/5 flex items-center justify-between z-30">
+        <div className="flex items-center gap-4">
+          {/* Back Button (Mobile Only) */}
+          <button
+            onClick={onBack}
+            className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-all text-gray-400 hover:text-white"
+          >
+            <ArrowLeft size={20} />
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden border-2 border-secondary/20 shadow-lg">
+              {receiverImage ? (
+                <img
+                  src={receiverImage}
+                  alt={receiverName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-secondary/10 flex items-center justify-center">
+                  <UserIcon size={20} className="text-secondary" />
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm md:text-base leading-none mb-1">
+                {receiverName || "Chat"}
+              </h3>
+              {/* <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                  <span className="text-[10px] md:text-xs text-gray-400 font-medium">Online</span>
+                </div> */}
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-6 py-8 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
         {isLoading ? (

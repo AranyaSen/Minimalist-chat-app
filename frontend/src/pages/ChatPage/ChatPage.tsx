@@ -1,14 +1,9 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import {
-  User as UserIcon,
-  Search,
-  MoreVertical,
-  MessageCircle,
-} from "lucide-react";
+import { User as UserIcon, Search, MoreVertical, MessageCircle } from "lucide-react";
 import Nav from "@/components/Nav/Nav";
 import Texting from "@/components/Texting/Texting";
-import { ConversationsListType, ParticipantUser } from "./Chat.types";
+import { ParticipantUser, ConversationsListType } from "./Chat.types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useConversationsQuery } from "@/queries/useConversationsQuery";
 import { ConversationsLoader } from "@/components/ConversationsLoader/ConversationsLoader";
@@ -16,13 +11,12 @@ import { initiateDirectChat } from "@/services/userService/userService";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchUsersQuery } from "@/queries/useSearchUsersQuery";
 import { useChatSocket } from "@/hooks/useChatSocket";
+import { getImageSrc, getOtherUser } from "@/utils/chatUtils";
 
 export const ChatPage = () => {
   const { user: currentUser } = useAuthStore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const [selectedReceiverId, setSelectedReceiverId] = useState<string | null>(
-    null
-  );
+  const [selectedReceiverId, setSelectedReceiverId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
@@ -45,21 +39,8 @@ export const ChatPage = () => {
     (isSearching && isSearchLoading) ||
     searchQuery !== debouncedSearch;
 
-  const getOtherUser = (
-    conversation: ConversationsListType
-  ): ParticipantUser | null => {
-    const otherParticipant = conversation.participants.find(
-      (p) => p.user._id !== currentUser?.id
-    );
-    return otherParticipant?.user || null;
-  };
-
-  const getImageSrc = (user: ParticipantUser): string | null => {
-    if (!user.image?.data?.data || !user.image?.contentType) return null;
-    const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(user.image.data.data))
-    );
-    return `data:${user.image.contentType};base64,${base64}`;
+  const getOtherUserFromConversation = (conversation: ConversationsListType): ParticipantUser | null => {
+    return getOtherUser(conversation, currentUser?.id || "");
   };
 
   const handleUserSelect = async (userId: string) => {
@@ -67,20 +48,16 @@ export const ChatPage = () => {
       const res = await initiateDirectChat(userId);
       if (res.success) {
         const chatId = res.data._id;
-        const otherUser = res.data.participants?.find(
-          (p: { user: { _id: string } | string }) => {
-            const uid =
-              typeof p.user === "string" ? p.user : p.user._id;
-            return uid !== currentUser?.id;
-          }
-        );
+        const otherUser = res.data.participants?.find((p: { user: { _id: string } | string }) => {
+          const uid = typeof p.user === "string" ? p.user : p.user._id;
+          return uid !== currentUser?.id;
+        });
         const receiverId =
-          typeof otherUser?.user === "string"
-            ? otherUser.user
-            : otherUser?.user?._id || userId;
+          typeof otherUser?.user === "string" ? otherUser.user : otherUser?.user?._id || userId;
 
         setSelectedChatId(chatId);
         setSelectedReceiverId(receiverId);
+
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
         setSearchQuery("");
       }
@@ -90,12 +67,14 @@ export const ChatPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col overflow-hidden">
+    <div className="h-screen bg-primary flex flex-col overflow-hidden">
       <Nav />
 
-      <main className="flex-1 pt-24 pb-6 px-4 md:px-8 max-w-7xl mx-auto w-full flex gap-6 overflow-hidden">
+      <main className="flex-1 pt-32 md:pt-28 pb-6 px-4 md:px-8 max-w-7xl mx-auto w-full flex gap-6 overflow-hidden">
         {/* Sidebar: Conversation List */}
-        <aside className="w-full md:w-80 lg:w-96 flex flex-col bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-300">
+        <aside
+          className={`w-full md:w-80 lg:w-96 flex flex-col bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-300 ${selectedChatId ? "hidden md:flex" : "flex"}`}
+        >
           {/* Sidebar Header */}
           <div className="p-6 border-b border-white/5 bg-white/5">
             <h2 className="text-2xl font-bold mb-4 flex items-center justify-between">
@@ -150,12 +129,8 @@ export const ChatPage = () => {
 
                       {/* User Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold truncate text-white">
-                          {user.fullName}
-                        </h3>
-                        <p className="text-xs truncate text-gray-400">
-                          @{user.username}
-                        </p>
+                        <h3 className="font-bold truncate text-white">{user.fullName}</h3>
+                        <p className="text-xs truncate text-gray-400">@{user.username}</p>
                         <p className="text-xs mt-1 truncate flex items-center gap-1 text-gray-500">
                           <MessageCircle size={12} />
                           <span className="italic">Click to start chat</span>
@@ -172,16 +147,14 @@ export const ChatPage = () => {
               )
             ) : conversationList.length > 0 ? (
               conversationList.map((conversation) => {
-                const otherUser = getOtherUser(conversation);
+                const otherUser = getOtherUser(conversation, currentUser?.id || "");
                 const isSelected = selectedChatId === conversation._id;
                 const imageSrc = otherUser ? getImageSrc(otherUser) : null;
 
                 return (
                   <div
                     key={conversation._id}
-                    onClick={() =>
-                      otherUser && handleUserSelect(otherUser._id)
-                    }
+                    onClick={() => otherUser && handleUserSelect(otherUser._id)}
                     className={`flex items-center gap-4 p-4 cursor-pointer rounded-2xl transition-all duration-300 group ${
                       isSelected
                         ? "bg-secondary text-primary shadow-lg shadow-secondary/20"
@@ -209,9 +182,7 @@ export const ChatPage = () => {
                           }`}
                         >
                           <UserIcon
-                            className={
-                              isSelected ? "text-primary/70" : "text-secondary"
-                            }
+                            className={isSelected ? "text-primary/70" : "text-secondary"}
                             size={24}
                           />
                         </div>
@@ -263,7 +234,6 @@ export const ChatPage = () => {
           </div>
         </aside>
 
-        {/* Main Content: Chat Window */}
         <section
           className={`flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative transition-all duration-300 ${!selectedChatId ? "hidden md:flex" : "flex"}`}
         >
@@ -271,6 +241,10 @@ export const ChatPage = () => {
           <Texting
             chatId={selectedChatId || ""}
             receiverId={selectedReceiverId || ""}
+            onBack={() => {
+              setSelectedChatId(null);
+              setSelectedReceiverId(null);
+            }}
           />
         </section>
       </main>

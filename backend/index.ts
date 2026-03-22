@@ -17,23 +17,25 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+const corsOptions = {
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : [
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+};
+
 const io = new Server(server, {
-  cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000"],
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 // Connect to Database
 connectDB();
 
 app.set("io", io);
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(bodyParser.json());
 
