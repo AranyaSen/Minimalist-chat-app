@@ -27,8 +27,13 @@ export const searchUsers = (
   return apiClient.get("/api/user/search", { params: { search } });
 };
 
+export const getAllUsers = (): Promise<ApiResponseType<ParticipantUser[]>> => {
+  return apiClient.get("/api/user");
+};
+
 export default {
   getConversations,
   initiateDirectChat,
   searchUsers,
+  getAllUsers,
 };

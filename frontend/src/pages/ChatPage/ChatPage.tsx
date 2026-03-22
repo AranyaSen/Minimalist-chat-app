@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { User as UserIcon, Search, MoreVertical, MessageCircle } from "lucide-react";
+import { User as UserIcon, Search, MessageCircle, Users } from "lucide-react";
 import Nav from "@/components/Nav/Nav";
 import Texting from "@/components/Texting/Texting";
-import { ParticipantUser, ConversationsListType } from "./Chat.types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useConversationsQuery } from "@/queries/useConversationsQuery";
 import { ConversationsLoader } from "@/components/ConversationsLoader/ConversationsLoader";
 import { initiateDirectChat } from "@/services/userService/userService";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchUsersQuery } from "@/queries/useSearchUsersQuery";
+import { AllUsersModal } from "@/components/AllUsersModal/AllUsersModal";
 import { useChatSocket } from "@/hooks/useChatSocket";
 import { getImageSrc, getOtherUser } from "@/utils/chatUtils";
 
@@ -18,6 +18,7 @@ export const ChatPage = () => {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedReceiverId, setSelectedReceiverId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAllUsers, setShowAllUsers] = useState(false);
   const queryClient = useQueryClient();
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -56,6 +57,7 @@ export const ChatPage = () => {
 
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
         setSearchQuery("");
+        setShowAllUsers(false);
       }
     } catch (err) {
       console.error("Failed to initiate chat:", err);
@@ -75,8 +77,12 @@ export const ChatPage = () => {
           <div className="p-6 border-b border-white/5 bg-white/5">
             <h2 className="text-2xl font-bold mb-4 flex items-center justify-between">
               Messages
-              <button className="p-2 hover:bg-white/10 rounded-full transition-all">
-                <MoreVertical size={20} className="text-gray-400" />
+              <button
+                onClick={() => setShowAllUsers(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-secondary/10 hover:bg-secondary/20 text-secondary rounded-full transition-all text-sm font-medium"
+              >
+                <Users size={16} />
+                <span>Find Users</span>
               </button>
             </h2>
             <div className="relative group">
@@ -244,6 +250,11 @@ export const ChatPage = () => {
           />
         </section>
       </main>
+
+      {/* All Users Modal */}
+      {showAllUsers && (
+        <AllUsersModal onClose={() => setShowAllUsers(false)} onUserSelect={handleUserSelect} />
+      )}
     </div>
   );
 };
