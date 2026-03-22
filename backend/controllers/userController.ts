@@ -7,8 +7,12 @@ import { AuthRequest } from "@/types/auth";
 
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const users = await User.find().select("-password");
-  if (users.length > 0) {
-    responseHandler(res, "Users fetched successfully", 200, users);
+  const formattedUsers = users.map((u) => ({
+    ...u.toObject(),
+    image: u.image?.data ? `/api/user/${u._id}/image` : null,
+  }));
+  if (formattedUsers.length > 0) {
+    responseHandler(res, "Users fetched successfully", 200, formattedUsers);
   } else {
     responseHandler(res, "No users created", 200);
   }
@@ -30,7 +34,12 @@ export const searchUsers = asyncHandler<AuthRequest>(async (req, res) => {
     ],
   }).select("-password -refreshToken -createdAt -joinedAt -__v -role");
 
-  responseHandler(res, "Users fetched successfully", 200, users);
+  const formattedUsers = users.map((u) => ({
+    ...u.toObject(),
+    image: u.image?.data ? `/api/user/${u._id}/image` : null,
+  }));
+
+  responseHandler(res, "Users fetched successfully", 200, formattedUsers);
 });
 
 export const getUserImage = asyncHandler(

@@ -39,7 +39,7 @@ const App = () => {
 
   return (
     <>
-      <ToastContainer autoClose={2000} theme="light" position="top-center" />
+      <ToastContainer autoClose={1500} theme="light" position="top-center" />
       <BrowserRouter>
         <Routes>
           <Route path="*" element={<NotFoundPage />} />

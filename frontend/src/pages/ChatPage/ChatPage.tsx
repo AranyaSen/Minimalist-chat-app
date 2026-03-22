@@ -39,10 +39,6 @@ export const ChatPage = () => {
     (isSearching && isSearchLoading) ||
     searchQuery !== debouncedSearch;
 
-  const getOtherUserFromConversation = (conversation: ConversationsListType): ParticipantUser | null => {
-    return getOtherUser(conversation, currentUser?.id || "");
-  };
-
   const handleUserSelect = async (userId: string) => {
     try {
       const res = await initiateDirectChat(userId);

@@ -1,9 +1,7 @@
 import { ConversationsListType, ParticipantUser } from "@/pages/ChatPage/Chat.types";
 
 export const getImageSrc = (user: ParticipantUser): string | null => {
-  if (!user.image?.data?.data || !user.image?.contentType) return null;
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(user.image.data.data)));
-  return `data:${user.image.contentType};base64,${base64}`;
+  return user.image || null;
 };
 
 export const getOtherUser = (
