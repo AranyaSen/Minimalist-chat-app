@@ -1,64 +1,195 @@
-🚀 Minimalist Chat App - Backend
+# 🚀 Minimalist Chat App - Backend
+
 The scalable engine powering real-time conversations.
 
-Welcome to the backend repository of my Minimalist Chat App! This is the engine that powers the real-time messaging platform. I built this with Node.js, Express, and TypeScript, focusing on performance, scalability, and writing clean, maintainable code.
+## 📋 Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Runtime** | Node.js |
+| **Framework** | Express.js |
+| **Language** | TypeScript |
+| **Database** | MongoDB with Mongoose ODM |
+| **Real-time** | Socket.io |
+| **Authentication** | JWT (Access + Refresh tokens) |
 
 ## 🏗️ Architecture Overview
 
-I structured the backend using a clean, layered MVC-style (Model-View-Controller) architecture. This separates concerns to keep the codebase maintainable and easy to navigate:
+The backend follows a clean **MVC (Model-View-Controller)** architecture with clear separation of concerns:
 
-- **Routes** handle inbound HTTP requests and direct them to specific controllers.
-- **Controllers** process the core business logic for each endpoint.
-- **Models** define the data structures and interact directly with the database.
-- **Middlewares** intercept requests for tasks like authentication, logging, and error handling before they reach the controllers.
-- **Sockets** manage real-time WebSocket connections independently from the standard HTTP REST endpoints.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      HTTP Request                            │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Routes  →  Middlewares (Auth, Validation, Error Handling)  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Controllers  →  Business Logic Processing                   │
+└─────────────────────────────────────────────────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            ▼                               ▼
+┌───────────────────────┐       ┌───────────────────────┐
+│  Models (Mongoose)    │       │  Sockets (WebSocket)  │
+│  - User               │       │  - join-room          │
+│  - Message            │       │  - join-chat          │
+│  - Conversation       │       │  - mark-read          │
+│  - Notifications      │       │  - disconnect         │
+│  - ReadMessage        │       │                       │
+└───────────────────────┘       └───────────────────────┘
+            │
+            ▼
+┌───────────────────────┐
+│     MongoDB           │
+└───────────────────────┘
+```
 
-## 📦 Core Packages & Utilizations
+### Layers Explained
 
-I carefully chose this stack to ensure reliability and speed:
-
-- **Express (`express`)**: The core web framework used to handle HTTP routing and standard API endpoints.
-- **Mongoose (`mongoose`)**: The ODM for MongoDB. I use it to create strongly-typed data schemas and perform fluent database operations.
-- **Socket.io (`socket.io`)**: The heart of the real-time chat. It establishes WebSocket connections with the frontend to push live messages and status updates instantly.
-- **Bcrypt (`bcrypt`)**: Before saving any user passwords to the database, I hash them securely using bcrypt.
-- **Joi (`joi`)**: Strict data validation is crucial. I use Joi to validate all incoming request bodies (like signup/login forms) before they ever hit the controllers or the database.
-- **Multer (`multer`)**: Manages file uploads, allowing users to share images or documents within the chat.
-- **JSON Web Token (`jsonwebtoken`) & Cookie Parser (`cookie-parser`)**: These form the backbone of the robust authentication system, managing tokens smoothly and securely.
+- **Routes** (`/routes`) - Define API endpoints and map to controllers
+- **Controllers** (`/controllers`) - Handle business logic for auth, messages, conversations, users
+- **Models** (`/models`) - Mongoose schemas for data structures
+- **Middlewares** (`/middlewares`) - Auth verification, validation, error handling
+- **Sockets** (`/sockets`) - WebSocket event handlers for real-time features
 
 ## 📂 Folder Structure
 
-Here's an overview of how the codebase is organized:
-
-```text
-/config       # Database connections and environment setups
-/controllers  # The brains of the routes containing business logic
-/middlewares  # Custom Express middlewares (e.g., verifying auth tokens)
-/models       # Mongoose schemas (Users, Messages, Conversations, etc.)
-/routes       # API endpoint definitions
-/sockets      # Real-time event listeners and emitters for Socket.io
-/types        # TypeScript interfaces and custom types for end-to-end type safety
-/uploads      # Temporary or local storage for file uploads via Multer
-/utils        # Handy helper functions (custom response formatters, token generators)
-/validators   # Joi schema definitions for strict request validation
 ```
+backend/
+├── config/           # Database connection configuration
+├── controllers/      # Business logic handlers
+│   ├── authController.ts
+│   ├── conversationController.ts
+│   ├── messageController.ts
+│   └── userController.ts
+├── middlewares/      # Express middleware
+│   ├── authMiddleware.ts    # JWT verification
+│   ├── errorMiddleware.ts   # Global error handling
+│   └── validationMiddleware.ts # Joi validation
+├── models/           # Mongoose schemas
+│   ├── Conversations.ts
+│   ├── Messages.ts
+│   ├── Notifications.ts
+│   ├── ReadMessage.ts
+│   └── User.ts
+├── routes/           # API route definitions
+│   ├── authRoutes.ts
+│   ├── conversationRoutes.ts
+│   ├── messageRoutes.ts
+│   └── userRoutes.ts
+├── sockets/          # Socket.io handlers
+│   └── chatSocket.ts
+├── types/            # TypeScript type definitions
+├── utils/            # Helper functions (token generation, response formatting)
+├── validators/       # Joi validation schemas
+├── uploads/          # File upload storage (Multer)
+├── index.ts          # Application entry point
+├── package.json
+└── tsconfig.json
+```
+
+## 📦 Dependencies
+
+### Production
+
+| Package | Purpose |
+|---------|---------|
+| `express` | Web framework for HTTP routing |
+| `mongoose` | MongoDB ODM with typed schemas |
+| `socket.io` | WebSocket server for real-time communication |
+| `bcrypt` | Password hashing for security |
+| `jsonwebtoken` | JWT token generation/verification |
+| `joi` | Request body validation |
+| `multer` | File upload handling (profile images) |
+| `cookie-parser` | Parse HTTP cookies for refresh tokens |
+| `cors` | Cross-origin resource sharing |
+| `dotenv` | Environment variable management |
+| `ws` | WebSocket library |
+| `ngrok` | Tunneling for development |
+| `tsconfig-paths` | TypeScript path resolution |
+
+### Development
+
+| Package | Purpose |
+|---------|---------|
+| `typescript` | Type safety |
+| `ts-node-dev` | Development server with hot reload |
+| `@types/*` | TypeScript type definitions |
+| `prettier` | Code formatting |
+
+## 🔐 API Endpoints
+
+### Authentication (`/api/auth`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/signup` | Register new user |
+| POST | `/signin` | User login |
+| POST | `/refresh` | Refresh access token |
+| POST | `/logout` | User logout |
+| GET | `/profile` | Get current user profile |
+
+### User (`/api/user`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Get all users |
+| GET | `/:id/image` | Get user profile image |
+
+### Messages (`/api/message`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/` | Send a new message |
+| GET | `/:chatId` | Get messages for a conversation |
+
+### Conversations (`/api/chat`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Get user's conversations |
+| POST | `/` | Create new conversation |
 
 ## 🔐 Authentication Flow
 
-I implemented a highly secure **Access Token + Refresh Token** authentication strategy to keep user data safe while ensuring a seamless user experience:
+1. **Login**: User credentials verified with bcrypt
+2. **Token Generation**:
+   - Access Token (15 min expiry) → returned in JSON body
+   - Refresh Token (24 hr expiry) → set as HttpOnly cookie
+3. **Protected Routes**: Access token sent via `Authorization: Bearer <token>` header
+4. **Token Refresh**: Automatic refresh via `/refresh` endpoint using cookie
 
-1. **Login**: When a user logs in, `bcrypt` verifies their password. If successful, `jsonwebtoken` creates two tokens:
-   - A short-lived **Access Token** (expires in 15 minutes).
-   - A long-lived **Refresh Token** (expires in 1 day).
-2. **Delivery**:
-   - The **Access Token** is sent back in the JSON body for the client to hold in memory.
-   - The **Refresh Token** is attached to the response as a secure, `HttpOnly` cookie via `cookie-parser`. This prevents any malicious client-side scripts (XSS attacks) from accessing it.
-3. **Authorization**: For subsequent protected requests, the frontend must attach the Access Token to the `Authorization` header. My custom auth middleware intercepts these requests, verifies the token, and grants access.
-4. **Refreshing**: When the 15-minute Access Token expires, the client hits a dedicated `/refresh` endpoint. The server reads the secure Refresh Token cookie automatically, verifies it against the database, and issues a brand new Access Token.
+## 🚀 Real-time Features (Socket.io)
 
-## 🚀 Real-time Messaging Under the Hood
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `join-room` | Client → Server | Register user to receive messages |
+| `join-chat` | Client → Server | Join specific conversation room |
+| `mark-read` | Client → Server | Mark messages as read |
+| `messages-read` | Server → Client | Broadcast read receipts |
+| `disconnect` | Client → Server | Handle user disconnection |
 
-When a user sends a message via an API endpoint or socket event, the `controllers` save it to MongoDB via Mongoose. Instantly, the `sockets` layer broadcasts that new message to the recipient's active socket connection using `socket.io`. This dual approach ensures every message is permanently persisted in the database while being delivered in real-time to the screen.
+## 🛠️ Scripts
+
+```bash
+npm run dev      # Start development server with hot reload
+npm run build    # Compile TypeScript to JavaScript
+npm run start    # Start production server
+npm run format   # Format code with Prettier
+```
+
+## ⚙️ Environment Variables
+
+```env
+MONGO_USER=<username>
+MONGO_PASSWORD=<password>
+MONGO_DB_NAME=<database_name>
+JWT_SECRET=<secret_key>
+PORT=7000
+ALLOWED_ORIGINS=<comma_separated_origins>
+```
 
 ---
 
-Feel free to explore the code, and reach out if you have any questions!
+Built with Node.js, Express, TypeScript, and Socket.io for real-time messaging.

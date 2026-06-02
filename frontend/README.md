@@ -1,65 +1,240 @@
-✨ Minimalist Chat App - Frontend
+# ✨ Minimalist Chat App - Frontend
 
 A snappy, modern, and highly responsive chat UI.
 
-Welcome to the frontend codebase for my Minimalist Chat App. I built this focusing on delivering a lightning-fast and intuitive user experience using React 19, TypeScript, and Vite.
+## 📋 Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| **Framework** | React 19 |
+| **Build Tool** | Vite |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS v4 |
+| **State Management** | Zustand |
+| **Server State** | TanStack React Query |
+| **HTTP Client** | Axios |
+| **Real-time** | Socket.io Client |
+| **Forms** | React Hook Form + Zod |
+| **Routing** | React Router v7 |
+| **Icons** | Lucide React |
+| **Notifications** | React Toastify |
 
 ## 🏗️ Architecture Overview
 
-The React application is built upon a modern, modular component-driven architecture:
+The application follows a **feature-first, layered architecture** with clear separation between UI state, server state, and business logic:
 
-- **Pages**: Top-level route components representing full views (e.g., Login, Chat UI).
-- **Components**: Reusable UI building blocks (buttons, modals, chat bubbles).
-- **Hooks**: Custom React hooks encapsulating specific UI or business logic.
-- **Store**: Global client-state managed effortlessly and predictably.
-- **Services/Queries**: Clean abstractions for API calls and server-state management.
-
-I strictly separate client-side UI state from server-side data caching to keep the app blazing fast, avoid redundant network requests, and maintain code readability.
-
-## 📦 Core Packages & Utilizations
-
-Here is the carefully selected toolbox powering the frontend:
-
-- **React (`react` v19) & React DOM**: The foundational UI library for building component-driven interfaces.
-- **Vite (`vite`)**: The build tool and development server, ensuring incredibly fast Hot Module Replacement (HMR) and optimized production builds.
-- **Tailwind CSS v4 (`tailwindcss`)**: The styling engine. I use utility classes to rapidly build a responsive, themeable UI directly from the markup without writing bloated, custom CSS files.
-- **Zustand (`zustand`)**: A lightweight, fast, and scalable bearbones state-management solution. I use it for global UI states like the currently active chat, unread message counts, and general user preferences.
-- **TanStack React Query (`@tanstack/react-query`)**: The go-to solution for server state. Whenever I fetch data via **Axios (`axios`)**, React Query automatically manages caching, loading states, error handling, and background syncing.
-- **React Router (`react-router-dom`)**: Handles single-page application (SPA) navigation and private route guarding.
-- **React Hook Form (`react-hook-form`) & Zod (`zod`)**: A perfect combination for complex forms. React Hook Form manages form state without messy component rerenders, while Zod strictly validates input data structures via `@hookform/resolvers`.
-- **Socket.io Client (`socket.io-client`)**: Connects to the backend server to send and receive real-time chat messages and online status updates instantly.
-- **Lucide React (`lucide-react`)**: Clean, customizable SVG icons used consistently throughout the interface.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Pages (Routes)                           │
+│   LandingPage │ SignIn │ Signup │ ChatPage │ NotfoundPage      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│   Components     │ │   Custom Hooks   │ │    Guards        │
+│ - Chatbox        │ │ - useChatSocket  │ │ - Auth guards    │
+│ - Nav            │ │ - useDebounce    │ │                  │
+│ - Loader         │ │                  │ │                  │
+│ - AllUsersModal  │ │                  │ │                  │
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+            ┌─────────────────┴─────────────────┐
+            ▼                                   ▼
+┌─────────────────────────┐         ┌─────────────────────────┐
+│   Zustand Store         │         │   React Query           │
+│   (Client UI State)     │         │   (Server State)        │
+│ - useAuthStore          │         │ - useGetMessages        │
+│ - isLoggedIn            │         │ - useGetConversations   │
+│ - accessToken           │         │ - useGetUsers           │
+│ - user                  │         │                         │
+└─────────────────────────┘         └─────────────────────────┘
+            │                                   │
+            └─────────────────┬─────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Services Layer                              │
+│  - apiClient.ts (Axios instance)                                 │
+│  - request.interceptor.ts (Attach auth tokens)                   │
+│  - response.interceptor.ts (Handle 401, refresh tokens)          │
+│  - authService, messageService, userService                      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              Backend API + Socket.io Server                      │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## 📂 Folder Structure
 
-Here's how I organized the `src/` directory:
-
-```text
-/assets     # Static files like images, fonts, or global SVGs
-/components # Reusable UI components (buttons, modals, input fields)
-/guards     # Higher-order components protecting private routes
-/hooks      # Custom React hooks for shared logic across multiple components
-/pages      # The main views for application routing
-/queries    # React Query hooks (e.g., useGetMessages) abstracting data fetching
-/services   # Axios instances, interceptors, and raw API call definitions
-/store      # Zustand store definitions for global client state
-/types      # TypeScript definitions keeping the app securely type-safe
-/utils      # Small, pure helper functions (date formatting, token decoding)
 ```
+frontend/
+├── public/             # Static assets
+├── src/
+│   ├── assets/         # Images, fonts, SVGs
+│   ├── components/     # Reusable UI components
+│   │   ├── AllUsersModal/
+│   │   ├── Chatbox/
+│   │   ├── ConversationsLoader/
+│   │   ├── Loader/
+│   │   ├── Nav/
+│   │   └── Texting/
+│   ├── guards/         # Route protection components
+│   ├── hooks/          # Custom React hooks
+│   │   ├── useChatSocket.ts    # Socket.io connection management
+│   │   └── useDebounce.ts      # Input debouncing utility
+│   ├── pages/          # Page-level components (routes)
+│   │   ├── LandingPage/
+│   │   ├── ChatPage/
+│   │   ├── SignIn/
+│   │   ├── Signup/
+│   │   └── NotfoundPage/
+│   ├── queries/        # React Query hooks for server state
+│   ├── services/       # API layer
+│   │   ├── api/
+│   │   │   ├── apiClient.ts       # Axios instance config
+│   │   │   ├── request.interceptor.ts
+│   │   │   └── response.interceptor.ts
+│   │   ├── authService/
+│   │   └── userService/
+│   ├── store/          # Zustand stores
+│   │   ├── useAuthStore.ts
+│   │   └── useAuthStore.types.ts
+│   ├── types/          # TypeScript type definitions
+│   ├── utils/          # Helper functions
+│   ├── App.tsx         # Root component with routing
+│   ├── main.tsx        # Entry point
+│   └── index.css       # Global styles (Tailwind)
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── eslint.config.js
+```
+
+## 📦 Dependencies
+
+### Production
+
+| Package | Purpose |
+|---------|---------|
+| `react` + `react-dom` | UI library (v19) |
+| `react-router-dom` | Client-side routing and navigation guards |
+| `axios` | HTTP client for API requests |
+| `@tanstack/react-query` | Server state management (caching, background sync) |
+| `zustand` | Lightweight client state management |
+| `socket.io-client` | Real-time WebSocket communication |
+| `react-hook-form` | Performant form handling |
+| `zod` + `@hookform/resolvers` | Schema validation for forms |
+| `tailwindcss` | Utility-first CSS framework (v4) |
+| `lucide-react` | Icon library |
+| `react-toastify` | Toast notifications |
+| `jwt-decode` | Decode JWT tokens |
+| `emoji-picker-react` | Emoji picker for chat |
+
+### Development
+
+| Package | Purpose |
+|---------|---------|
+| `vite` + `@vitejs/plugin-react` | Build tool with HMR |
+| `@tailwindcss/vite` | Tailwind Vite plugin |
+| `typescript` | Type safety |
+| `eslint` + plugins | Code linting |
+| `prettier` | Code formatting |
 
 ## 🔐 Authentication Flow
 
-To communicate securely with the backend, I implemented a robust **Access Token + Refresh Token** strategy:
+```
+┌──────────────┐     ┌───────────────────┐     ┌─────────────────────┐
+│   User       │     │   Frontend        │     │   Backend           │
+│   Login      │     │                   │     │                     │
+└─────┬────────┘     └─────────┬─────────┘     └──────────┬──────────┘
+      │                        │                          │
+      │ 1. Submit credentials  │                          │
+      │───────────────────────>│                          │
+      │                        │ 2. POST /api/auth/signin │
+      │                        │─────────────────────────>│
+      │                        │                          │ Validates
+      │                        │ 3. Returns:              │
+      │                        │    - accessToken (body)  │
+      │                        │    - refreshToken (cookie)│
+      │                        │<─────────────────────────│
+      │ 4. Store in memory     │                          │
+      │<───────────────────────│                          │
+      │                        │                          │
+      │ 5. Protected request   │                          │
+      │───────────────────────>│                          │
+      │                        │ 6. Authorization: Bearer │
+      │                        │─────────────────────────>│
+      │                        │                          │
+      │         If 401 ───────>│ 7. Auto-refresh token    │
+      │                        │─────────────────────────>│
+      │                        │ 8. New access token      │
+      │                        │<─────────────────────────│
+      │                        │ 9. Retry original request│
+      │                        │─────────────────────────>│
+```
 
-1. **Login & Token Storage**: Upon logging in, the backend returns a short-lived **Access Token** in the JSON response, and implicitly sets a long-lived **Refresh Token** in an `HttpOnly` cookie. The Access Token is stored safely in memory (not in local storage, which protects against XSS attacks).
-2. **API Requests**: I configured an Axios interceptor (in `/services`) to automatically attach the Access Token to the `Authorization` header (`Bearer <token>`) for every outgoing protected request.
-3. **Silent Token Refresh**: When the short-lived 15-minute Access Token expires, API calls will fail with a `401 Unauthorized` error. My Axios response interceptor intercepts this error, automatically fires a background request to the backend's `/refresh` endpoint (which seamlessly passes the secure HttpOnly cookie), obtains a new Access Token, updates the headers, and gracefully retries the original failed request without the user ever noticing.
+### Key Implementation Details
 
-## 🚀 Key Functionalities Under the Hood
+- **Access Token**: Stored in memory via Zustand (not localStorage - XSS safe)
+- **Refresh Token**: HttpOnly cookie (not accessible to JavaScript)
+- **Axios Interceptors**:
+  - Request: Attach `Authorization: Bearer <token>` header
+  - Response: On 401, auto-refresh and retry failed requests
 
-- **Lightning-fast Chat**: Opening a chat triggers `react-query` to fetch the initial message history via `axios`. Simultaneously, `socket.io-client` listens for new incoming messages. As messages arrive, the React Query cache or `zustand` store is instantly updated, rendering changes to the UI without full page refreshes.
-- **Form Handling & Validation**: When a user registers or logs in, their inputs are captured by `react-hook-form` and instantly validated against a `zod` schema as they type. This provides immediate visual feedback and prevents unnecessary API requests if required fields are missed.
+## 🚀 Real-time Features (Socket.io)
+
+The `useChatSocket` hook manages WebSocket connections:
+
+```typescript
+// Usage in ChatPage
+const { socket, joinChat, markAsRead } = useChatSocket(userId);
+
+// Join a conversation room
+joinChat(chatId);
+
+// Mark messages as read
+markAsRead(chatId);
+```
+
+| Socket Event | Direction | Description |
+|--------------|-----------|-------------|
+| `join-room` | Client → Server | Register user's personal room |
+| `join-chat` | Client → Server | Join specific conversation |
+| `mark-read` | Client → Server | Mark messages as read |
+| `messages-read` | Server → Client | Read receipt broadcast |
+
+## 🛠️ Scripts
+
+```bash
+npm run dev       # Start Vite dev server
+npm run build     # Build for production
+npm run preview   # Preview production build
+npm run lint      # Run ESLint
+npm run format    # Format with Prettier
+```
+
+## ⚙️ Environment Variables
+
+```env
+VITE_BACKEND_URL=<backend_url>
+VITE_WEBSOCKET_URL=<websocket_url>
+```
+
+## 🎨 Key Features
+
+- **Optimistic UI Updates**: React Query caches provide instant feedback
+- **Background Sync**: Data stays fresh without manual refreshing
+- **Debounced Search**: Efficient user search with `useDebounce`
+- **Loading States**: Skeleton loaders for conversations
+- **Toast Notifications**: User-friendly error/success messages
+- **Private Routes**: Auth guards protect authenticated pages
 
 ---
 
-I hope you enjoy exploring the codebase!
+Built with React 19, TypeScript, Vite, Tailwind CSS, Zustand, and Socket.io.
